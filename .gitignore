@@ -1,0 +1,44 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# User uploaded files
+storage/uploads/*
+!storage/uploads/.gitkeep
+
+# Backups
+backups/
+*.sql
+*.sql.gz
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# PHP
+/vendor/
+
+# Runtime/cache
+cache/
+storage/cache/
+storage/sessions/
