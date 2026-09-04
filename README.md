@@ -3,16 +3,15 @@
 Web hosting management platform — control panel for customers and admins. Phase 1 Foundation is implemented.
 
 ## Project Status
-**Phase 1 — Foundation ✅** (2026-09-04)
-- Secure auth (register/login/logout), Argon2id/Bcrypt, session hardening, lockout
-- RBAC (admin/customer), 16 granular permissions
-- CSRF, XSS, SQLi, IDOR, path traversal protections
-- Password reset + email verification (hashed tokens, expiry, log mail driver)
-- Customer & admin dashboards (Bootstrap 5, responsive)
-- Migrations, audit logging, rate limiting, PathGuard/UploadGuard
-- 36 automated tests, docs
-
-Next: Phase 2 Hosting (plans, accounts, quotas) — awaiting authorization.
+**Phase 2 — Hosting ✅** (2026-09-04)
+- Phase 1 foundation (auth, RBAC, dashboards, migrations, 36 tests) preserved
+- Hosting plans: admin CRUD, validated quotas (FREE/BASIC/PREMIUM), RBAC `plans.manage`
+- Hosting accounts: customer creation, ownership checks, lifecycle pending→active→suspended→terminated via `HostingService` + `LocalMockProvisioner` (safe `storage/hosting` mock)
+- Subdomains: `sub.freehost.example` from `system_settings.main_domain`, strict validation, duplicate & quota guards
+- Quotas: storage/bandwidth/database/domain/subdomain enforced server-side
+- Admin hosting: view/search, details, activate/suspend/terminate with audit
+- Customer dashboard hosting section (plan, limits, usage, subdomains)
+- 56 automated tests, hardened docs
 
 ## Requirements
 - **PHP 8.3+** (fails safe on <8.3)
@@ -38,9 +37,9 @@ C:\php83\php.exe scripts/create-admin.php
 - HTML5, CSS3, Bootstrap 5, JavaScript
 - PHP 8.3, PDO, `vlucas/phpdotenv`
 - MySQL/MariaDB, Apache
-- PHPUnit 10 (36 tests)
+- PHPUnit 10 (56 tests)
 
-## Security (Phase 1)
+## Security (Phase 2)
 Implemented: prepared statements, `e()` escaping, CSP, CSRF synchronizer, RBAC server-side, PathGuard, UploadGuard, session fixation protection, rate limiting, audit logs. See `docs/security.md`.
 
 ## Documentation

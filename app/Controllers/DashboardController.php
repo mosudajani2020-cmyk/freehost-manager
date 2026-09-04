@@ -24,17 +24,23 @@ final class DashboardController
             exit;
         }
 
-        // Gather stats
+        // Gather stats + hosting details
         $hostingCount = 0;
         $dbCount = 0;
         $domainCount = 0;
+        $hostingAccounts = [];
         try {
             $hostingCount = (int) $db->fetchColumn("SELECT COUNT(*) FROM hosting_accounts WHERE user_id = ?", [$user->id]);
             $dbCount = (int) $db->fetchColumn("SELECT COUNT(*) FROM customer_databases WHERE hosting_account_id IN (SELECT id FROM hosting_accounts WHERE user_id = ?)", [$user->id]);
             $domainCount = (int) $db->fetchColumn("SELECT COUNT(*) FROM domains WHERE hosting_account_id IN (SELECT id FROM hosting_accounts WHERE user_id = ?)", [$user->id]);
-        } catch (\Throwable $e) {
-            // Tables may not exist yet — ignore
-        }
+            // Fetch accounts with plan info
+            $rows = $db->fetchAll("SELECT ha.*, hp.name as plan_name, hp.storage_limit_mb, hp.bandwidth_limit_mb, hp.database_limit, hp.domain_limit, hp.subdomain_limit FROM hosting_accounts ha JOIN hosting_plans hp ON hp.id=ha.plan_id WHERE ha.user_id=? ORDER BY ha.id DESC", [$user->id]);
+            foreach ($rows as $r) {
+                $subCount = (int) $db->fetchColumn("SELECT COUNT(*) FROM subdomains WHERE hosting_account_id=?", [$r['id']]);
+                $r['subdomain_count'] = $subCount;
+                $hostingAccounts[] = $r;
+            }
+        } catch (\Throwable) {}
 
         $notifications = [];
         try {
@@ -52,6 +58,7 @@ final class DashboardController
             'hostingCount' => $hostingCount,
             'dbCount' => $dbCount,
             'domainCount' => $domainCount,
+            'hostingAccounts' => $hostingAccounts,
             'notifications' => $notifications,
             'auditLogs' => $auditLogs,
         ]);

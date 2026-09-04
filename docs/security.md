@@ -1,4 +1,4 @@
-# Security — FreeHost Manager (Phase 1)
+# Security — FreeHost Manager (Phase 2)
 
 ## Baseline (Phase 1 implemented)
 - **SQL Injection** — PDO prepared statements everywhere (`Database::query` with `prepare/execute`). No concatenation. Tests include `' OR 1=1 --` payload in validators.
@@ -30,14 +30,21 @@ Set in `public/index.php` and `.htaccess`:
 - Blocks `C:`, `\\`, `:`, `* ? " < > |` in paths.
 - `realpath` prefix check handles backslashes.
 
-## Unimplemented in Phase 1 (deferred)
-- Full file manager enforcement (quota, move/copy) — guard is ready, enforcement in Phase 3.
-- Actual email sending (log driver only).
-- Production Linux isolation (jails, PHP-FPM pools, quotas) — mocked.
+## Phase 2 Additions
+- **Hosting quotas** — enforced in `HostingService` (server-side): storage/bandwidth/database/domain/subdomain limits vs plan; never trust browser values; tested with limit 2 on FREE.
+- **Lifecycle** — pending→active→suspended→terminated with admin-only transitions, suspended/terminated block subdomain creation; audit logged.
+- **Subdomain validation** — strict regex `^[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?$`, reserved (`www` etc.), duplicate `full_domain` UNIQUE, main domain from `system_settings`/env (never hard-coded).
+- **Ownership/IDOR** — every hosting/subdomain/plan operation checks `hosting_accounts.user_id === actorId` or `admin` role; URL ID tampering returns 403.
+- **Plan RBAC** — `plans.manage` only for admin; customer GET/POST to `/admin/plans` denied via RbacMiddleware (tested).
+- **Provisioning** — `LocalMockProvisioner` only creates safe `storage/hosting` dirs; no `exec/system`; `STORAGE_PATH` fallback for tests; audit logs for create/suspend/activate/terminate.
 
-## Verification (Phase 1)
-- 36 PHPUnit tests (PHP 8.3): validators, PathGuard, UploadGuard, Csrf, Xss, Rbac, Auth hash.
-- Manual: register → login → dashboard → logout; admin cannot be accessed by customer; CSRF token required; path traversal blocked.
+## Unimplemented (deferred to Phase 3+)
+- Full file manager enforcement (move/copy) — guard ready, enforcement Phase 3.
+- Real DNS/SSL/production isolation — still mocked.
+
+## Verification (Phase 2)
+- 56 PHPUnit tests (PHP 8.3): +15 Phase2Hosting tests covering IDOR, quota, duplicate/invalid subdomain, suspended/terminated, SQLi, XSS, CSRF, audit, no exec, admin lifecycle.
+- Manual: customer create hosting → view → create subdomain → duplicate rejected → quota blocked → admin suspend/activate/terminate; customer cannot access another user's hosting via URL.
 
 ## Recommendations Before Production
 - Upgrade AppServ PHP 7.3 → 8.3, Apache 2.4.41 → latest, set `expose_php Off`, `display_errors Off`, `session.cookie_secure 1`, `open_basedir` per vhost.
