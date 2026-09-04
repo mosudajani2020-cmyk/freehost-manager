@@ -1,4 +1,4 @@
-# Security — FreeHost Manager (Phase 2)
+# Security — FreeHost Manager (Phase 3)
 
 ## Baseline (Phase 1 implemented)
 - **SQL Injection** — PDO prepared statements everywhere (`Database::query` with `prepare/execute`). No concatenation. Tests include `' OR 1=1 --` payload in validators.
@@ -38,13 +38,20 @@ Set in `public/index.php` and `.htaccess`:
 - **Plan RBAC** — `plans.manage` only for admin; customer GET/POST to `/admin/plans` denied via RbacMiddleware (tested).
 - **Provisioning** — `LocalMockProvisioner` only creates safe `storage/hosting` dirs; no `exec/system`; `STORAGE_PATH` fallback for tests; audit logs for create/suspend/activate/terminate.
 
-## Unimplemented (deferred to Phase 3+)
-- Full file manager enforcement (move/copy) — guard ready, enforcement Phase 3.
-- Real DNS/SSL/production isolation — still mocked.
+## Phase 3 Additions — File Manager
+- **Isolation** — every op via `PathGuard::resolve(root, relative)` + prefix check (realpath, case-insensitive Windows, encoded/null/absolute blocked); browser path never trusted; absolute `C:\`/`/var` never displayed.
+- **Ownership** — `FileService::requireActiveAccount` checks `hosting_account.user_id===userId` and `status==='active'` for all 10 routes; IDOR tested (user2 cannot list user1 files).
+- **Upload** — `UploadGuard`: extension blocklist (`php,phtml,phar`), double extension, MIME `finfo`, php content sniff, size `20MB`, quota `remainingBytes`, sanitized `basename`, duplicate auto-rename, `move_uploaded_file` only after validation; no trust in client MIME/size.
+- **Download** — validates ownership/active, `PathGuard`, `is_dir` blocked, flag files `.suspended/.htaccess` blocked, `Content-Disposition: attachment`, `X-Content-Type-Options: nosniff`.
+- **Text edit** — allow-list `txt,html,css,js,json,xml,md,php,htaccess...` 512KB limit, binary null check, atomic `tmp+rename`, escaped display (`e()`), quota delta check.
+- **Mkdir/rename/delete** — `isSafeFilename` (no `/\0` `..` `.hidden` `CON` `<>:*?`), no traversal, no root deletion, no overwrite, audit `directory.create`, `file.delete`, `file.rename`.
+- **Quota** — `getQuotaInfo` via `RecursiveDirectoryIterator` vs `plan.storageLimitMb`; enforced on upload/create/edit; remaining displayed; negative/overflow prevented.
+- **Audit** — `file.list/upload/download/create/edit/rename/delete`, `directory.create/delete` with `hosting_account_id`, `relative_path`, `size`, never file content/secrets.
+- **No exec** — grep confirms no `exec/system/passthru` in `app/`; customer PHP never executed via control panel (`storage/.htaccess php_flag engine off`).
 
-## Verification (Phase 2)
-- 56 PHPUnit tests (PHP 8.3): +15 Phase2Hosting tests covering IDOR, quota, duplicate/invalid subdomain, suspended/terminated, SQLi, XSS, CSRF, audit, no exec, admin lifecycle.
-- Manual: customer create hosting → view → create subdomain → duplicate rejected → quota blocked → admin suspend/activate/terminate; customer cannot access another user's hosting via URL.
+## Verification (Phase 3)
+- **93 PHPUnit tests (PHP 8.3):** 56 prior + 37 Phase3FileManager covering list own/block another/IDOR/traversal/encoded/null/absolute/Windows/Linux/escape/.env/delete root/rename outside/download outside/upload outside/invalid names/extensions/oversized/quota/duplicate/suspended/terminated/unauth/CSRF/XSS/malicious/audit/no secrets/edit ownership/size/rename/mkdir/delete/download/quota/php upload.
+- Manual (php83 -S): login → hosting → File Manager → browse `/public_html` → mkdir → upload txt → duplicate auto-rename → create text → edit → rename → download → delete → quota bar updates; suspended account blocked.
 
 ## Recommendations Before Production
 - Upgrade AppServ PHP 7.3 → 8.3, Apache 2.4.41 → latest, set `expose_php Off`, `display_errors Off`, `session.cookie_secure 1`, `open_basedir` per vhost.

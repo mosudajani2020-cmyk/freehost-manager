@@ -9,6 +9,7 @@ use App\Controllers\VerificationController;
 use App\Controllers\HostingController;
 use App\Controllers\PlanController;
 use App\Controllers\AdminHostingController;
+use App\Controllers\FileController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\RbacMiddleware;
@@ -66,3 +67,15 @@ $router->get('/admin/hosting/{id}', [AdminHostingController::class, 'show'], [Au
 $router->post('/admin/hosting/{id}/suspend', [AdminHostingController::class, 'suspend'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
 $router->post('/admin/hosting/{id}/activate', [AdminHostingController::class, 'activate'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
 $router->post('/admin/hosting/{id}/terminate', [AdminHostingController::class, 'terminate'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+
+// File Manager — customer only, ownership enforced in service
+$router->get('/hosting/{id}/files', [FileController::class, 'index'], [AuthMiddleware::class]);
+$router->post('/hosting/{id}/files/mkdir', [FileController::class, 'mkdir'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->post('/hosting/{id}/files/upload', [FileController::class, 'upload'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->get('/hosting/{id}/files/download', [FileController::class, 'download'], [AuthMiddleware::class]);
+$router->post('/hosting/{id}/files/delete', [FileController::class, 'delete'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->post('/hosting/{id}/files/rename', [FileController::class, 'rename'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->get('/hosting/{id}/files/create', [FileController::class, 'createForm'], [AuthMiddleware::class]);
+$router->post('/hosting/{id}/files/create', [FileController::class, 'create'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->get('/hosting/{id}/files/edit', [FileController::class, 'edit'], [AuthMiddleware::class]);
+$router->post('/hosting/{id}/files/edit', [FileController::class, 'saveEdit'], [CsrfMiddleware::class, AuthMiddleware::class]);

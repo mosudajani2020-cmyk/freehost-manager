@@ -23,6 +23,13 @@
           <?php elseif ($account->status==='terminated'): ?>
             <div class="alert alert-danger">This account is terminated — no operations allowed.</div>
           <?php endif; ?>
+          <div class="mt-3 d-grid gap-2">
+            <?php if ($account->status==='active'): ?>
+              <a href="/hosting/<?= (int) $account->id ?>/files" class="btn btn-primary"><i class="fa-solid fa-folder-open me-1"></i>Open File Manager</a>
+            <?php else: ?>
+              <a href="/hosting/<?= (int) $account->id ?>/files" class="btn btn-secondary disabled">File Manager (requires active)</a>
+            <?php endif; ?>
+          </div>
         </div>
       </div>
 

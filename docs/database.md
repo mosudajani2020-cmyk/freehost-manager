@@ -1,4 +1,4 @@
-# Database — FreeHost Manager (Phase 2)
+# Database — FreeHost Manager (Phase 3)
 
 ## Engine & Collation
 All tables: `ENGINE=InnoDB`, `DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`.
@@ -49,13 +49,14 @@ Rerunning is idempotent — `IF NOT EXISTS` and `[SKIP]`.
 - Least privilege: app uses `freehost_app` with limited GRANT, never root.
 - Tokens: `random_bytes(32)` → hex → `hash('sha256')` stored, 1h (reset) / 24h (verify) expiry, single-use.
 
-## Phase 2 Usage (no new migration)
-Phase 2 uses existing tables — no new migration required (idempotent rerun shows all SKIP):
+## Phase 2 & 3 Usage (no new migration)
+Phase 2 and 3 use existing tables — no new migration required (idempotent rerun shows all SKIP):
 - `hosting_plans` full CRUD via `HostingPlanRepository` (admin only, validated limits 0-1M MB, 0-1000 counts).
 - `hosting_accounts` created via `HostingService::createAccount` (ownership, unique username, status lifecycle, root_path under `storage/hosting`).
-- `subdomains` via `HostingService::createSubdomain` (strict regex, reserved, duplicate `full_domain` UNIQUE, quota `plan.subdomain_limit`).
+- `subdomains` via `HostingService::createSubdomain` (strict regex, reserved, duplicate `full_domain` UNIQUE, quota `plan.subdomainLimit`).
 - `system_settings.main_domain` is source of truth for subdomains (fallback `APP_DOMAIN`).
+- **File Manager (Phase 3)** uses filesystem only (`storage/hosting/{username}_{rand}/public_html`) — no new tables; quota calculated via `RecursiveDirectoryIterator` vs `plan.storageLimitMb`; `usage_records` reserved for future bandwidth tracking.
 - All FKs/indexes verified; `hosting_accounts(username)` UNIQUE, `subdomains(full_domain)` UNIQUE.
 
 ## Next Phases
-Phase 3 will use file paths under `storage/hosting/{account}/public_html`, Phase 4 will populate `customer_databases`/`database_users` via provisioner.
+Phase 4 will populate `customer_databases`/`database_users` via provisioner.
