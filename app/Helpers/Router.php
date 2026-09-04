@@ -111,8 +111,18 @@ final class Router
         }
     }
 
-    private function runMiddleware(string|callable $middleware): void
+    private function runMiddleware(mixed $middleware): void
     {
+        if (is_object($middleware)) {
+            if (method_exists($middleware, 'handle')) {
+                $middleware->handle();
+                return;
+            }
+            if (is_callable($middleware)) {
+                $middleware();
+                return;
+            }
+        }
         if (is_callable($middleware)) {
             $middleware();
             return;
@@ -133,6 +143,6 @@ final class Router
                 }
             }
         }
-        throw new \RuntimeException('Invalid middleware: ' . (is_string($middleware) ? $middleware : 'callable'));
+        throw new \RuntimeException('Invalid middleware: ' . (is_string($middleware) ? $middleware : (is_object($middleware) ? get_class($middleware) : 'callable')));
     }
 }
