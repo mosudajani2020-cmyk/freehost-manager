@@ -1,4 +1,4 @@
-# Security — FreeHost Manager (Phase 4)
+# Security — FreeHost Manager (Phase 5)
 
 ## Baseline (Phase 1 implemented)
 - **SQL Injection** — PDO prepared statements everywhere (`Database::query` with `prepare/execute`). No concatenation. Tests include `' OR 1=1 --` payload in validators.
@@ -66,6 +66,21 @@ Set in `public/index.php` and `.htaccess`:
 ## Verification (Phase 4)
 - **112 PHPUnit tests (PHP 8.3):** 93 prior + 19 Phase4Database covering creation/ownership/IDOR/duplicate/invalid/SQLi/quota/suspended/terminated/user create/unauthorized/duplicate/invalid names/unauthorized deletion/audit/secret leakage/CSRF/no exec/XSS.
 - Manual (php83 -S): hosting → Databases → create `mydb` → duplicate rejected → invalid `bad name` rejected → quota 2 → create user `myuser` → password shown once → duplicate user rejected → delete user → delete db → admin `/admin/databases` view.
+
+## Phase 5 Additions — Provisioning
+- **No shell:** grep confirms no `exec/system` in `app/` (only `pdo->exec` excluded via `(?<!->)`); web request never `exec` on hosting server.
+- **Nodes:** `hosting_nodes` with `api_key_hash` (SHA256) + preview, never plaintext; `generateApiKey()` `fhm_` + 32 hex.
+- **Jobs:** `provisioning_jobs` with `job_uuid`, `idempotency_key` UNIQUE, `status` lifecycle, `attempts/max_attempts 3`, `last_error`, `requested_by`; duplicate idempotency returns same job (tested).
+- **Signing:** `ProvisioningService::signRequest` HMAC-SHA256 over `method|path|bodyHash|timestamp|nonce` with `apiKeyPlain`; `verifyRequest` checks 5-min TTL, nonce replay via `rate_limits` (`nonce:{nonce}`), `hash_equals`.
+- **Suspended/terminated:** `dispatch` blocks `create*` if `suspended`/`terminated` (tested).
+- **Invalid node/job:** 400/404 (tested).
+- **IDOR:** customer cannot see another's jobs (check `hosting_accounts.user_id`).
+- **Audit:** `provisioning.queued/active/failed/retrying` with safe metadata, no secrets.
+- **Worker auth (future):** `X-Api-Key` + `X-Signature` + `X-Timestamp` + `X-Nonce`, restricted allow-list `HostingProvisionerInterface` only.
+
+## Verification (Phase 5)
+- **127 PHPUnit tests (PHP 8.3):** 112 prior + 15 Phase5Provisioning covering job creation/duplicate/retry/failure/authorization/IDOR/audit/secret leakage/suspended/terminated/invalid node/invalid job/signing+replay/no exec/idempotency.
+- Manual (php83 -S): admin `/admin/nodes` → create node → API key shown once → `/admin/nodes/{id}` shows jobs; `/admin/provisioning` filter by `failed` → retry → failed terminal; customer cannot access `/admin/nodes` (403).
 
 ## Recommendations Before Production
 - Upgrade AppServ PHP 7.3 → 8.3, Apache 2.4.41 → latest, set `expose_php Off`, `display_errors Off`, `session.cookie_secure 1`, `open_basedir` per vhost.

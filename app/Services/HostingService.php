@@ -9,10 +9,16 @@ use App\Models\HostingAccount;
 use App\Repositories\HostingAccountRepository;
 use App\Repositories\HostingPlanRepository;
 use App\Repositories\SubdomainRepository;
+use App\Repositories\ProvisioningJobRepository;
+use App\Repositories\HostingNodeRepository;
 use App\Services\Provisioning\HostingProvisionerInterface;
 
 final class HostingService
 {
+    private ProvisioningService $provisioning;
+    private ProvisioningJobRepository $jobs;
+    private HostingNodeRepository $nodes;
+
     public function __construct(
         private readonly Database $db,
         private readonly HostingAccountRepository $accounts,
@@ -20,7 +26,13 @@ final class HostingService
         private readonly SubdomainRepository $subdomains,
         private readonly HostingProvisionerInterface $provisioner,
         private readonly AuditService $audit,
-    ) {}
+        ?ProvisioningJobRepository $jobs = null,
+        ?HostingNodeRepository $nodes = null,
+    ) {
+        $this->jobs = $jobs ?? new ProvisioningJobRepository($this->db);
+        $this->nodes = $nodes ?? new HostingNodeRepository($this->db);
+        $this->provisioning = new ProvisioningService($this->db, $this->nodes, $this->jobs, $this->provisioner, $this->audit);
+    }
 
     /**
      * Create hosting account for user — enforces plan limits, ownership, quotas.
@@ -74,6 +86,8 @@ final class HostingService
         $account = $this->accounts->findById($account->id);
 
         $this->audit->log($userId, 'hosting.create', 'hosting_account', (string) $account->id, 'success', ['plan' => $plan->slug]);
+        // Phase 5: record provisioning job (idempotent)
+        $this->recordJob($account->id, 'createHostingAccount', ['username'=>$username,'plan'=>$plan->slug], $userId);
         return ['success'=>true,'message'=>'Hosting account created','account'=>$account];
     }
 
@@ -88,6 +102,7 @@ final class HostingService
         $account = $this->accounts->findById($accountId);
         $this->provisioner->suspendHostingAccount($account);
         $this->audit->log($actorId, 'hosting.suspend', 'hosting_account', (string) $accountId, 'success', ['by_admin' => $isAdmin]);
+        $this->recordJob($accountId, 'suspendHostingAccount', [], $actorId);
         return ['success'=>true,'message'=>'Account suspended'];
     }
 
@@ -102,6 +117,7 @@ final class HostingService
         $account = $this->accounts->findById($accountId);
         $this->provisioner->activateHostingAccount($account);
         $this->audit->log($actorId, 'hosting.activate', 'hosting_account', (string) $accountId, 'success', ['by_admin' => $isAdmin]);
+        $this->recordJob($accountId, 'activateHostingAccount', [], $actorId);
         return ['success'=>true,'message'=>'Account activated'];
     }
 
@@ -115,6 +131,7 @@ final class HostingService
         $account = $this->accounts->findById($accountId);
         $this->provisioner->terminateHostingAccount($account);
         $this->audit->log($actorId, 'hosting.terminate', 'hosting_account', (string) $accountId, 'success', ['by_admin' => $isAdmin]);
+        $this->recordJob($accountId, 'terminateHostingAccount', [], $actorId);
         return ['success'=>true,'message'=>'Account terminated'];
     }
 
@@ -163,6 +180,7 @@ final class HostingService
         $sd = $this->subdomains->create($accountId, null, $sub, $fullDomain);
         $this->provisioner->createSubdomain($account, $sub, $fullDomain);
         $this->audit->log($userId, 'subdomain.create', 'subdomain', (string) $sd->id, 'success', ['domain' => $fullDomain]);
+        $this->recordJob($accountId, 'createSubdomain', ['subdomain'=>$sub,'fullDomain'=>$fullDomain], $userId);
 
         return ['success'=>true,'message'=>'Subdomain created','data'=>['fullDomain'=>$fullDomain, 'subdomain'=>$sd]];
     }
@@ -182,5 +200,31 @@ final class HostingService
             'domain' => (int) $this->db->fetchColumn("SELECT COUNT(*) FROM domains WHERE hosting_account_id=?", [$account->id]) + $requested <= $plan->domainLimit,
             default => true,
         };
+    }
+
+    private function recordJob(int $accountId, string $operation, array $payload, int $requestedBy): void
+    {
+        try {
+            // Select least loaded active node
+            $node = null;
+            $nodes = $this->nodes->active();
+            if ($nodes !== []) {
+                usort($nodes, fn($a,$b)=> $a->currentAccounts <=> $b->currentAccounts);
+                $node = $nodes[0];
+            }
+            $idempotency = hash('sha256', $accountId . '|' . $operation . '|' . json_encode($payload) . '|' . microtime(true) . random_bytes(8));
+            $this->jobs->create([
+                'hosting_account_id' => $accountId,
+                'node_id' => $node?->id,
+                'operation' => $operation,
+                'payload' => $payload,
+                'status' => 'active',
+                'idempotency_key' => substr($idempotency, 0, 64),
+                'requested_by' => $requestedBy,
+            ]);
+        } catch (\Throwable $e) {
+            // Do not fail main operation if job logging fails
+            error_log('[HostingService] job record failed: ' . $e->getMessage());
+        }
     }
 }

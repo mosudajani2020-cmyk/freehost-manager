@@ -12,6 +12,8 @@ use App\Controllers\AdminHostingController;
 use App\Controllers\FileController;
 use App\Controllers\DatabaseController;
 use App\Controllers\AdminDatabaseController;
+use App\Controllers\AdminNodeController;
+use App\Controllers\AdminProvisioningController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\RbacMiddleware;
@@ -93,3 +95,13 @@ $router->post('/hosting/{id}/databases/users/delete', [DatabaseController::class
 // Admin Database Hosting
 $router->get('/admin/databases', [AdminDatabaseController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
 $router->get('/admin/databases/{id}', [AdminDatabaseController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+
+// Admin Nodes & Provisioning (Phase 5)
+$router->get('/admin/nodes', [AdminNodeController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/nodes/create', [AdminNodeController::class, 'create'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->post('/admin/nodes', [AdminNodeController::class, 'store'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/nodes/{id}', [AdminNodeController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/provisioning', [AdminProvisioningController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/provisioning/{id}', [AdminProvisioningController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->post('/admin/provisioning/{id}/retry', [AdminProvisioningController::class, 'retry'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->post('/admin/provisioning/{id}/fail', [AdminProvisioningController::class, 'fail'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);

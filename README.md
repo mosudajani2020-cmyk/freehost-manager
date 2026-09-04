@@ -3,16 +3,14 @@
 Web hosting management platform — control panel for customers and admins. Phase 4 Database Hosting is implemented.
 
 ## Project Status
-**Phase 4 — Database Hosting ✅** (2026-09-04)
-- Phase 1-3 preserved (93 → 112 tests)
-- Database hosting: customer `fh_{accountId}_{name}` + `fh_{accountId}_u_{user}` naming, strict regex, reserved block, SQL injection guard
-- Mock provisioning via `LocalMockProvisioner` (no root, no exec) — logs only, least-privilege
-- Credentials: `random_bytes` 16 chars, encrypted with `APP_KEY` (`sodium`/`openssl` AES-GCM), shown once, never logged, decrypt via `DatabaseService::decryptPassword`
-- Quota: `plan.databaseLimit` enforced server-side (FREE 2, BASIC 5, PREMIUM 20)
-- Suspended/terminated accounts blocked
-- Customer UI: list/create/delete databases, create/delete users, show once password, connection info
-- Admin UI: view all databases/users, search, owner/hosting status
-- Audit: `database.create/delete`, `database.user_create/delete` with safe metadata, no password
+**Phase 5 — Provisioning Architecture ✅** (2026-09-04)
+- Phase 1-4 preserved (112 → 127 tests)
+- Provisioning: `hosting_nodes` + `provisioning_jobs` (`pending→queued→provisioning→active/failed/retrying/suspended/terminated`), idempotency `idempotency_key` UNIQUE, retry max 3, `LocalMockProvisioner` mock logs, `HostingService` records jobs
+- Nodes: admin CRUD, API key `fhm_*` hash preview shown once, least-loaded active selection, `max_accounts/current_accounts`
+- Jobs: dispatch with idempotency, `processJob` synchronous for mock (future async worker), `retryJob`/`failJob`, audit `provisioning.*`
+- Security: HMAC-SHA256 `X-Signature` over `method|path|bodyHash|timestamp|nonce` with 5-min TTL + nonce replay via `rate_limits`, no `exec`, no SSH passwords, no private keys in Git
+- Admin UI: `/admin/nodes`, `/admin/provisioning` with filter, retry, failure handling
+- 127 automated tests, hardened docs + `docs/deployment.md`
 
 ## Requirements
 - **PHP 8.3+** (fails safe on <8.3)
@@ -38,9 +36,9 @@ C:\php83\php.exe scripts/create-admin.php
 - HTML5, CSS3, Bootstrap 5, JavaScript
 - PHP 8.3, PDO, `vlucas/phpdotenv`
 - MySQL/MariaDB, Apache
-- PHPUnit 10 (112 tests)
+- PHPUnit 10 (127 tests)
 
-## Security (Phase 4)
+## Security (Phase 5)
 Implemented: prepared statements, `e()` escaping, CSP, CSRF synchronizer, RBAC server-side, PathGuard, UploadGuard, session fixation protection, rate limiting, audit logs. See `docs/security.md`.
 
 ## Documentation
