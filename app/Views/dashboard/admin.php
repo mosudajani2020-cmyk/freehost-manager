@@ -6,13 +6,18 @@
       <ul class="nav flex-column">
         <li class="nav-item"><a class="nav-link active" href="/admin/dashboard"><i class="fa-solid fa-shield-halved me-2"></i>Admin Dashboard</a></li>
         <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="fa-solid fa-gauge me-2"></i>Customer View</a></li>
-        <li class="nav-item"><a class="nav-link" href="#"><i class="fa-solid fa-users me-2"></i>Users (Phase 6)</a></li>
-        <li class="nav-item"><a class="nav-link" href="#"><i class="fa-solid fa-list-check me-2"></i>Audit Logs</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/hosting"><i class="fa-solid fa-server me-2"></i>Hosting Accounts</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/plans"><i class="fa-solid fa-layer-group me-2"></i>Plans</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/nodes"><i class="fa-solid fa-network-wired me-2"></i>Nodes</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/provisioning"><i class="fa-solid fa-gears me-2"></i>Provisioning</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/databases"><i class="fa-solid fa-database me-2"></i>Databases</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/dns"><i class="fa-solid fa-globe me-2"></i>DNS</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/ssl"><i class="fa-solid fa-lock me-2"></i>SSL</a></li>
       </ul>
     </nav>
     <main class="col-md-9 col-lg-10 p-4">
       <h2>Admin Dashboard</h2>
-      <p class="text-muted">System overview — Phase 1 foundation.</p>
+      <p class="text-muted">System overview — Phases 1–6 complete.</p>
 
       <div class="row g-3 mb-4">
         <div class="col-md-3"><div class="card"><div class="card-body"><h6 class="text-muted">Total users</h6><h3><?= (int) $stats['total_users'] ?></h3></div></div></div>

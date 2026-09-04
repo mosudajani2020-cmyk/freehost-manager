@@ -3,12 +3,14 @@
   <div class="row">
     <nav class="col-md-3 col-lg-2 sidebar p-3">
       <h6 class="text-muted text-uppercase small">Customer</h6>
+      <?php $firstHostingId = !empty($hostingAccounts[0]['id']) ? (int)$hostingAccounts[0]['id'] : null; ?>
       <ul class="nav flex-column">
         <li class="nav-item"><a class="nav-link active" href="/dashboard"><i class="fa-solid fa-gauge me-2"></i>Dashboard</a></li>
         <li class="nav-item"><a class="nav-link" href="/hosting"><i class="fa-solid fa-server me-2"></i>Hosting</a></li>
-        <li class="nav-item"><a class="nav-link" href="#"><i class="fa-solid fa-folder me-2"></i>Files (Phase 3)</a></li>
-        <li class="nav-item"><a class="nav-link" href="#"><i class="fa-solid fa-database me-2"></i>Databases (Phase 4)</a></li>
-        <li class="nav-item"><a class="nav-link" href="#"><i class="fa-solid fa-globe me-2"></i>Domains (Phase 5)</a></li>
+        <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/files' : '/hosting' ?>"><i class="fa-solid fa-folder me-2"></i>Files</a></li>
+        <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/databases' : '/hosting' ?>"><i class="fa-solid fa-database me-2"></i>Databases</a></li>
+        <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/dns' : '/hosting' ?>"><i class="fa-solid fa-globe me-2"></i>DNS</a></li>
+        <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/ssl' : '/hosting' ?>"><i class="fa-solid fa-lock me-2"></i>SSL</a></li>
       </ul>
       <hr>
       <div class="small text-muted">

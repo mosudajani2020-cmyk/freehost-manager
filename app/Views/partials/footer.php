@@ -1,6 +1,6 @@
 <footer class="mt-5 py-4 text-center text-muted small">
   <div class="container">
-    <p class="mb-0">&copy; <?= date('Y') ?> <?= e($_ENV['APP_NAME'] ?? 'FreeHost Manager') ?> — Secure hosting control panel. Phase 1 Foundation.</p>
+    <p class="mb-0">&copy; <?= date('Y') ?> <?= e($_ENV['APP_NAME'] ?? 'FreeHost Manager') ?> — Secure hosting control panel. Phases 1–6 complete.</p>
     <p class="mb-0">Env: <?= e($_ENV['APP_ENV'] ?? 'production') ?> | PHP <?= e(PHP_VERSION) ?></p>
   </div>
 </footer>
