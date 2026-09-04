@@ -1,4 +1,4 @@
-# Deployment — FreeHost Manager (Phase 5)
+# Deployment — FreeHost Manager (Phase 6)
 
 ## Overview
 Phase 5 implements a **production-ready provisioning abstraction** without turning Windows/AppServ into a production hosting server. The control panel remains isolated; provisioning is via a restricted service/worker.
@@ -71,4 +71,12 @@ Provisioning Service / API (restricted worker)
 
 ## Limitations (Phase 5)
 - No real SSH, no actual Linux nodes, no TLS/DNS, no background worker (synchronous). Future worker will be separate process, authenticated via same HMAC, with job `queued` → `provisioning` → `active`.
+
+## Phase 6 — DNS/SSL (Local Mock)
+- **DNS:** `dns_records` + `subdomains.dns_status` via `DnsService` + `LocalMockDnsProvider` (no Route53/Cloudflare). Hostname validation strict, duplicate `hostname` UNIQUE, takeover prevention (must be subdomain of `APP_DOMAIN`), lifecycle `pending→active→suspended→removed`.
+- **SSL:** `ssl_certificates` + `subdomains.ssl_status` via `SslService` + `LocalMockCertificateProvider` (no Let's Encrypt). Request → `active` 90d, `renew`/`revoke` lifecycle `pending/issuing/active/renewing/expired/failed/revoked`, `expires_at` auto.
+- **Production:** DNS API (Cloudflare/Route53) with same `DnsProviderInterface`; ACME (Let's Encrypt) via `CertificateProviderInterface` with `api_key_hash` + HMAC, async worker, auto-renew cron.
+
+## Limitations (Phase 6)
+- No real DNS API, no real ACME, no public DNS modification. All `LocalMock*` logs only. No private keys in Git.
 

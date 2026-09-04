@@ -181,6 +181,16 @@ final class HostingService
         $this->provisioner->createSubdomain($account, $sub, $fullDomain);
         $this->audit->log($userId, 'subdomain.create', 'subdomain', (string) $sd->id, 'success', ['domain' => $fullDomain]);
         $this->recordJob($accountId, 'createSubdomain', ['subdomain'=>$sub,'fullDomain'=>$fullDomain], $userId);
+        // Phase 6: also create DNS and SSL records (mock)
+        try {
+            $this->db->query("INSERT INTO dns_records (hosting_account_id, hostname, type, value, ttl, status) VALUES (?,?,?,?,?, 'active') ON DUPLICATE KEY UPDATE status='active'", [$accountId, $fullDomain, 'A', '127.0.0.1', 3600]);
+            $this->db->execute("UPDATE subdomains SET dns_status='active' WHERE id=?", [$sd->id]);
+        } catch (\Throwable) {}
+        try {
+            $expires = date('Y-m-d H:i:s', time()+90*24*3600);
+            $this->db->query("INSERT INTO ssl_certificates (hosting_account_id, hostname, status, provider, expires_at) VALUES (?,?, 'active','local_mock',?) ON DUPLICATE KEY UPDATE status='active'", [$accountId, $fullDomain, $expires]);
+            $this->db->execute("UPDATE subdomains SET ssl_status='active', ssl_expires_at=? WHERE id=?", [$expires, $sd->id]);
+        } catch (\Throwable) {}
 
         return ['success'=>true,'message'=>'Subdomain created','data'=>['fullDomain'=>$fullDomain, 'subdomain'=>$sd]];
     }

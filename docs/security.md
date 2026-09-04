@@ -1,4 +1,4 @@
-# Security — FreeHost Manager (Phase 5)
+# Security — FreeHost Manager (Phase 6)
 
 ## Baseline (Phase 1 implemented)
 - **SQL Injection** — PDO prepared statements everywhere (`Database::query` with `prepare/execute`). No concatenation. Tests include `' OR 1=1 --` payload in validators.
@@ -81,6 +81,18 @@ Set in `public/index.php` and `.htaccess`:
 ## Verification (Phase 5)
 - **127 PHPUnit tests (PHP 8.3):** 112 prior + 15 Phase5Provisioning covering job creation/duplicate/retry/failure/authorization/IDOR/audit/secret leakage/suspended/terminated/invalid node/invalid job/signing+replay/no exec/idempotency.
 - Manual (php83 -S): admin `/admin/nodes` → create node → API key shown once → `/admin/nodes/{id}` shows jobs; `/admin/provisioning` filter by `failed` → retry → failed terminal; customer cannot access `/admin/nodes` (403).
+
+## Phase 6 Additions — DNS/SSL
+- **Hostname validation:** `DnsService::validateHostname` checks 253 max, labels 1-63, `^[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?$`, no spaces/quotes/`;`, no `*`, no `..`, control chars; duplicate `hostname` UNIQUE + `subdomains.full_domain` takeover check (must be subdomain of `APP_DOMAIN`).
+- **DNS lifecycle:** `pending/active/failed/suspended/removed` via `dns_records`, `subdomains.dns_status` synced; admin can `suspended` etc.; suspended/terminated hosting blocks create.
+- **SSL lifecycle:** `pending/issuing/active/renewing/expired/failed/revoked` via `ssl_certificates`, `subdomains.ssl_status` synced; `request` → `active` (90d), `renew` → `active`, `revoke` → `revoked`, provider failure (`hostname` contains `fail`) → `failed`.
+- **Providers:** `DomainProviderInterface`, `DnsProviderInterface`, `CertificateProviderInterface` with `LocalMock*` (no real DNS/LETS Encrypt, no API keys, no `exec`, logs only).
+- **Ownership/IDOR:** every DNS/SSL op checks `hosting_account.user_id`, `subdomains.hosting_account_id`, admin via `Rbac(admin)`, duplicate hostname across accounts blocked.
+- **Audit:** `dns.create/delete/status_update`, `ssl.request/renew/revoke/status_update` with safe metadata (hostname, not secrets).
+
+## Verification (Phase 6)
+- **145 PHPUnit tests (PHP 8.3):** 127 prior + 18 Phase6DnsSsl covering hostname validation/IDOR/duplicate/suspended/terminated/CSRF/ownership/SSL lifecycle/provider failure/audit/secret leakage/takeover/invalid/no exec/XSS/DNS+SSL lifecycle/provider interfaces.
+- Manual (php83 -S): hosting → DNS → create `test.freehost.example` → duplicate rejected → invalid `bad..` rejected → suspended blocked → SSL → request `test.freehost.example` → active → renew → revoke → admin `/admin/dns` + `/admin/ssl` status updates; customer cannot see another's DNS (403).
 
 ## Recommendations Before Production
 - Upgrade AppServ PHP 7.3 → 8.3, Apache 2.4.41 → latest, set `expose_php Off`, `display_errors Off`, `session.cookie_secure 1`, `open_basedir` per vhost.

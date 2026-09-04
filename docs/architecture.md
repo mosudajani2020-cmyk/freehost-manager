@@ -1,4 +1,4 @@
-# Architecture — FreeHost Manager (Phase 5)
+# Architecture — FreeHost Manager (Phase 6)
 
 ## Overview
 Modular monolith, PHP 8.3+, no framework. Separation:
@@ -40,10 +40,11 @@ HTTP → public/index.php (version guard, bootstrap, session, security headers)
 - **Separation control-panel vs customer code** — `storage/hosting/{account}/public_html` is not under `public/` origin; `.htaccess php_flag engine off` in storage; future Linux will use PHP-FPM pools.
 - **Provisioning abstraction** — `HostingProvisionerInterface` + `ProvisioningService` (Phase 5) with `LocalMockProvisioner` mock logs, `HostingNode` (least-loaded active) + `ProvisioningJob` (`pending→queued→provisioning→active/failed/retrying/suspended/terminated`, idempotency `idempotency_key` UNIQUE, retry max 3, HMAC `X-Signature` with 5-min TTL + nonce replay via `rate_limits`), no shell, future `LinuxProvisioner` will be restricted worker/API.
 - **Hosting lifecycle** — `HostingService` enforces pending→active→suspended→terminated, ownership, quotas, now also records `provisioning_jobs` via `recordJob` (idempotent) and uses `ProvisioningService` for node selection.
-- **Subdomains** — `subdomain.freehost.example` where main domain from `system_settings.main_domain` or `APP_DOMAIN`; strict validation, quota, duplicate guard, mock provisioner.
+- **Subdomains** — `subdomain.freehost.example` where main domain from `system_settings.main_domain` or `APP_DOMAIN`; strict validation, quota, duplicate guard, mock provisioner; auto-creates `dns_records` + `ssl_certificates` entries via `HostingService` (Phase 6).
 - **File Manager** — `FileService` (Phase 3) enforces isolation via `PathGuard::resolve(root, relative)` for every op; `UploadGuard` for extension/MIME/size; quota via `calcUsage` vs `plan.storageLimitMb`; atomic writes; text edit allow-list 512KB; audit for every op; no customer PHP execution via control panel.
 - **Database Hosting** — `DatabaseService` (Phase 4) generates safe names `fh_{accountId}_{part}` (`^[a-z][a-z0-9_]{2,29}$`, reserved block, no spaces/quotes), quota `plan.databaseLimit`, mock provisioner (no `CREATE DATABASE` as root), password `random_bytes` 16 chars + encrypted with `APP_KEY` (`sodium`/`AES-GCM`), shown once, never logged, audit safe.
-- **Phase 5 boundaries** — real Linux nodes, PHP-FPM pools, actual DNS/SSL, async worker still mocked (synchronous `processJob`). No public server connection in this phase.
+- **DNS/SSL (Phase 6)** — `DnsService` + `SslService` with `DnsProviderInterface`/`CertificateProviderInterface` + `DomainProviderInterface` + `LocalMock*` (no real DNS/LETS Encrypt), strict hostname validation, duplicate `hostname` UNIQUE, takeover prevention (must be subdomain of `APP_DOMAIN`), lifecycle `dns: pending/active/failed/suspended/removed` + `ssl: pending/issuing/active/renewing/expired/failed/revoked` synced to `subdomains.dns_status/ssl_status`, audit, no secrets.
+- **Phase 6 boundaries** — real DNS/ACME still mocked; no public DNS modification.
 
 ## Security Headers (public/index.php)
 - `X-Content-Type-Options: nosniff`
@@ -56,13 +57,16 @@ HTTP → public/index.php (version guard, bootstrap, session, security headers)
 Control Panel (this app) → HTTPS + HMAC (X-Timestamp/X-Nonce/X-Signature) → Provisioning Service/API (restricted worker)
   → Hosting Node (Linux, Nginx, PHP-FPM per customer, chroot/jail, cgroup)
   → Database Service (MySQL least-privilege)
-  → DNS API, TLS/ACME (future)
+  → DNS Provider (Route53/Cloudflare API, mock LocalMockDnsProvider)
+  → Certificate Provider (ACME/Let's Encrypt, mock LocalMockCertificateProvider)
 ```
 **Phase 5 local mock:** `storage/hosting` isolated via `PathGuard`; `UploadGuard`; no shell; `php_flag engine off` + `LocalMockProvisioner` logs + `provisioning_jobs` + `hosting_nodes` (local-mock-1). **Production** will use Linux jails, PHP-FPM per account, `hosting_nodes` with `api_key_hash`, HMAC signing, async worker polling `queued` jobs, idempotency, replay protection.
 
 **File Manager isolation:** `authenticated user → owned active hosting → PathGuard::resolve(base, relative) → absolute` — browser path never trusted; relative paths displayed as `/`, `/public_html`, absolute never leaked.
 
 **Provisioning isolation:** Web request creates `provisioning_jobs` (queued) with `idempotency_key`; worker (future) authenticates via `X-Api-Key` + `HMAC`, verifies `timestamp` + `nonce` (rate_limits), executes allow-list `HostingProvisionerInterface` only, updates `status`→`active/failed`, audit logs, no `exec`.
+
+**DNS/SSL isolation (Phase 6):** `DnsService`/`SslService` validate `hostname` strictly, check `hosting_account.user_id`, ensure `hostname` is subdomain of `APP_DOMAIN` (takeover prevention), use `LocalMock*` providers (no real API keys), sync to `subdomains.dns_status/ssl_status` + `dns_records`/`ssl_certificates` with lifecycles.
 
 ## Config
 All secrets via `.env` → `vlucas/phpdotenv` → `config/*.php`. `.env` never committed. `APP_KEY` generated via `scripts/generate-key.php`.

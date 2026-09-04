@@ -14,6 +14,10 @@ use App\Controllers\DatabaseController;
 use App\Controllers\AdminDatabaseController;
 use App\Controllers\AdminNodeController;
 use App\Controllers\AdminProvisioningController;
+use App\Controllers\DnsController;
+use App\Controllers\SslController;
+use App\Controllers\AdminDnsController;
+use App\Controllers\AdminSslController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\RbacMiddleware;
@@ -105,3 +109,20 @@ $router->get('/admin/provisioning', [AdminProvisioningController::class, 'index'
 $router->get('/admin/provisioning/{id}', [AdminProvisioningController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
 $router->post('/admin/provisioning/{id}/retry', [AdminProvisioningController::class, 'retry'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
 $router->post('/admin/provisioning/{id}/fail', [AdminProvisioningController::class, 'fail'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+
+// DNS & SSL — Customer (Phase 6)
+$router->get('/hosting/{id}/dns', [DnsController::class, 'index'], [AuthMiddleware::class]);
+$router->post('/hosting/{id}/dns', [DnsController::class, 'create'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->post('/hosting/{id}/dns/delete', [DnsController::class, 'delete'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->get('/hosting/{id}/ssl', [SslController::class, 'index'], [AuthMiddleware::class]);
+$router->post('/hosting/{id}/ssl/request', [SslController::class, 'request'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->post('/hosting/{id}/ssl/renew', [SslController::class, 'renew'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->post('/hosting/{id}/ssl/revoke', [SslController::class, 'revoke'], [CsrfMiddleware::class, AuthMiddleware::class]);
+
+// Admin DNS & SSL (Phase 6)
+$router->get('/admin/dns', [AdminDnsController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/dns/{id}', [AdminDnsController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->post('/admin/dns/{id}/status', [AdminDnsController::class, 'updateStatus'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/ssl', [AdminSslController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/ssl/{id}', [AdminSslController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->post('/admin/ssl/{id}/status', [AdminSslController::class, 'updateStatus'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);

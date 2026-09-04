@@ -1,4 +1,4 @@
-# Database — FreeHost Manager (Phase 4)
+# Database — FreeHost Manager (Phase 6)
 
 ## Engine & Collation
 All tables: `ENGINE=InnoDB`, `DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`.
@@ -13,6 +13,8 @@ Files:
 - `001_create_users_and_rbac.php` — users, roles, permissions, pivots + seed.
 - `002_create_hosting_plans_and_accounts.php` — hosting_plans, hosting_accounts, domains, subdomains, customer_databases, database_users, usage_records + seed plans.
 - `003_create_support_tables.php` — password_resets, email_verifications, notifications, audit_logs, system_settings, rate_limits + seed settings.
+- `004_create_provisioning.php` — hosting_nodes, provisioning_jobs + seed local-mock-1.
+- `005_create_dns_ssl.php` — dns_records, ssl_certificates, subdomains dns_status/ssl_status columns.
 
 Rerunning is idempotent — `IF NOT EXISTS` and `[SKIP]`.
 
@@ -49,15 +51,16 @@ Rerunning is idempotent — `IF NOT EXISTS` and `[SKIP]`.
 - Least privilege: app uses `freehost_app` with limited GRANT, never root.
 - Tokens: `random_bytes(32)` → hex → `hash('sha256')` stored, 1h (reset) / 24h (verify) expiry, single-use.
 
-## Phase 2, 3 & 4 Usage (no new migration)
-Phase 2, 3 and 4 use existing tables — no new migration required (idempotent rerun shows all SKIP):
+## Phase 2-6 Usage
 - `hosting_plans` full CRUD via `HostingPlanRepository` (admin only, validated limits 0-1M MB, 0-1000 counts).
-- `hosting_accounts` created via `HostingService::createAccount` (ownership, unique username, status lifecycle, root_path under `storage/hosting`).
-- `subdomains` via `HostingService::createSubdomain` (strict regex, reserved, duplicate `full_domain` UNIQUE, quota `plan.subdomainLimit`).
+- `hosting_accounts` created via `HostingService::createAccount` (ownership, unique username, status lifecycle, root_path under `storage/hosting`, now also records `provisioning_jobs`).
+- `subdomains` via `HostingService::createSubdomain` (strict regex, reserved, duplicate `full_domain` UNIQUE, quota `plan.subdomainLimit`, auto-creates `dns_records` + `ssl_certificates` mock).
 - `system_settings.main_domain` is source of truth for subdomains (fallback `APP_DOMAIN`).
-- **File Manager (Phase 3)** uses filesystem only (`storage/hosting/{username}_{rand}/public_html`) — no new tables; quota calculated via `RecursiveDirectoryIterator` vs `plan.storageLimitMb`; `usage_records` reserved for future bandwidth tracking.
-- **Database Hosting (Phase 4)** uses `customer_databases` (`hosting_account_id` FK, `name` UNIQUE `fh_{accountId}_{part}`, `charset`, `status`) and `database_users` (`customer_database_id` FK, `username` UNIQUE `fh_{accountId}_u_{part}`, `encrypted_password` via `APP_KEY`, `host` localhost); naming validated `^[a-z][a-z0-9_]{2,29}$`, reserved `mysql` etc. blocked, quota `plan.databaseLimit` (FREE 2), mock provisioner.
-- All FKs/indexes verified; `hosting_accounts(username)` UNIQUE, `subdomains(full_domain)` UNIQUE, `customer_databases(name)` UNIQUE, `database_users(username)` UNIQUE.
+- **File Manager (Phase 3)** uses filesystem only (`storage/hosting/{username}_{rand}/public_html`) — no new tables; quota calculated via `RecursiveDirectoryIterator` vs `plan.storageLimitMb`.
+- **Database Hosting (Phase 4)** uses `customer_databases` (`hosting_account_id` FK, `name` UNIQUE `fh_{accountId}_{part}`) and `database_users` (`username` UNIQUE `fh_{accountId}_u_{part}`, `encrypted_password` via `APP_KEY`), quota `plan.databaseLimit`.
+- **Provisioning (Phase 5)** uses `hosting_nodes` (name/hostname UNIQUE, `api_key_hash` preview, `status`, `current_accounts`) and `provisioning_jobs` (`job_uuid` UNIQUE, `idempotency_key` UNIQUE, `status` 8 states, `attempts`, `payload` JSON, FKs).
+- **DNS/SSL (Phase 6)** uses `dns_records` (`hosting_account_id` FK, `hostname`+`type` UNIQUE, `value`, `ttl`, `status` pending/active/failed/suspended/removed) and `ssl_certificates` (`hostname` UNIQUE, `status` pending/issuing/active/renewing/expired/failed/revoked, `provider` local_mock, `expires_at`), plus `subdomains.dns_status/ssl_status` sync.
+- All FKs/indexes verified; `hosting_accounts(username)` UNIQUE, `subdomains(full_domain)` UNIQUE, `customer_databases(name)` UNIQUE, `database_users(username)` UNIQUE, `dns_records(hostname,type)` UNIQUE, `ssl_certificates(hostname)` UNIQUE, `provisioning_jobs(idempotency_key)` UNIQUE.
 
 ## Next Phases
-Phase 5 will handle domains/subdomain enhancements, Phase 6 admin, Phase 7 provisioning.
+Phase 7 will handle advanced provisioning worker, billing, and production hardening.
