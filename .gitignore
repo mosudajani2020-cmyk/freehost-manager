@@ -42,3 +42,11 @@ pnpm-debug.log*
 cache/
 storage/cache/
 storage/sessions/
+.phpunit.cache/
+.phpunit.cache
+storage/logs/*
+!storage/logs/.gitkeep
+storage/hosting/*
+!storage/hosting/.gitkeep
+storage/temp/*
+!storage/temp/.gitkeep

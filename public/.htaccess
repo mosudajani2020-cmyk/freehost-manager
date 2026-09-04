@@ -1,0 +1,42 @@
+# FreeHost Manager — Apache configuration
+# DocumentRoot must be /public. This file defends against direct access if misconfigured.
+
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block hidden files and sensitive extensions
+    RewriteRule "(^|/)\." - [F]
+    RewriteRule "\.(env|log|sql|sql\.gz|ini)$" - [F,NC]
+
+    # Front controller — route all non-file requests to index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Deny direct access to sensitive files even without mod_rewrite
+<FilesMatch "^\.env|^\.git|composer\.(json|lock)|phpunit\.xml">
+    Require all denied
+</FilesMatch>
+
+# Security headers (also set in PHP for portability)
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+</IfModule>
+
+# Prevent PHP execution in storage (defense in depth — also handled by app-level jail)
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+
+# Storage directories should never be web-accessible; if public/ is not docroot, this helps
+RedirectMatch 404 "^/(\.\.|\.git|storage|config|app|database|tests)/.*$"
