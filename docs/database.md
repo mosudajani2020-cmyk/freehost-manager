@@ -1,4 +1,4 @@
-# Database — FreeHost Manager (Phase 3)
+# Database — FreeHost Manager (Phase 4)
 
 ## Engine & Collation
 All tables: `ENGINE=InnoDB`, `DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`.
@@ -49,14 +49,15 @@ Rerunning is idempotent — `IF NOT EXISTS` and `[SKIP]`.
 - Least privilege: app uses `freehost_app` with limited GRANT, never root.
 - Tokens: `random_bytes(32)` → hex → `hash('sha256')` stored, 1h (reset) / 24h (verify) expiry, single-use.
 
-## Phase 2 & 3 Usage (no new migration)
-Phase 2 and 3 use existing tables — no new migration required (idempotent rerun shows all SKIP):
+## Phase 2, 3 & 4 Usage (no new migration)
+Phase 2, 3 and 4 use existing tables — no new migration required (idempotent rerun shows all SKIP):
 - `hosting_plans` full CRUD via `HostingPlanRepository` (admin only, validated limits 0-1M MB, 0-1000 counts).
 - `hosting_accounts` created via `HostingService::createAccount` (ownership, unique username, status lifecycle, root_path under `storage/hosting`).
 - `subdomains` via `HostingService::createSubdomain` (strict regex, reserved, duplicate `full_domain` UNIQUE, quota `plan.subdomainLimit`).
 - `system_settings.main_domain` is source of truth for subdomains (fallback `APP_DOMAIN`).
 - **File Manager (Phase 3)** uses filesystem only (`storage/hosting/{username}_{rand}/public_html`) — no new tables; quota calculated via `RecursiveDirectoryIterator` vs `plan.storageLimitMb`; `usage_records` reserved for future bandwidth tracking.
-- All FKs/indexes verified; `hosting_accounts(username)` UNIQUE, `subdomains(full_domain)` UNIQUE.
+- **Database Hosting (Phase 4)** uses `customer_databases` (`hosting_account_id` FK, `name` UNIQUE `fh_{accountId}_{part}`, `charset`, `status`) and `database_users` (`customer_database_id` FK, `username` UNIQUE `fh_{accountId}_u_{part}`, `encrypted_password` via `APP_KEY`, `host` localhost); naming validated `^[a-z][a-z0-9_]{2,29}$`, reserved `mysql` etc. blocked, quota `plan.databaseLimit` (FREE 2), mock provisioner.
+- All FKs/indexes verified; `hosting_accounts(username)` UNIQUE, `subdomains(full_domain)` UNIQUE, `customer_databases(name)` UNIQUE, `database_users(username)` UNIQUE.
 
 ## Next Phases
-Phase 4 will populate `customer_databases`/`database_users` via provisioner.
+Phase 5 will handle domains/subdomain enhancements, Phase 6 admin, Phase 7 provisioning.

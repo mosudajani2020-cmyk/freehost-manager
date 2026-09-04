@@ -1,4 +1,4 @@
-# Architecture — FreeHost Manager (Phase 3)
+# Architecture — FreeHost Manager (Phase 4)
 
 ## Overview
 Modular monolith, PHP 8.3+, no framework. Separation:
@@ -17,19 +17,19 @@ HTTP → public/index.php (version guard, bootstrap, session, security headers)
 
 ## Directory Map
 - `public/` — only web-accessible. Contains `index.php`, `.htaccess`, `assets/`. DocumentRoot must be here.
-- `app/Controllers/` — Auth, Dashboard, PasswordReset, Verification, HostingController, PlanController, AdminHostingController, FileController.
-- `app/Services/` — AuthService, AuditService, PasswordResetService, EmailVerificationService, HostingService, FileService, Provisioning (HostingProvisionerInterface, LocalMockProvisioner).
+- `app/Controllers/` — Auth, Dashboard, PasswordReset, Verification, HostingController, PlanController, AdminHostingController, FileController, DatabaseController, AdminDatabaseController.
+- `app/Services/` — AuthService, AuditService, PasswordResetService, EmailVerificationService, HostingService, FileService, DatabaseService, Provisioning (HostingProvisionerInterface, LocalMockProvisioner).
 - `app/Repositories/` — UserRepository, HostingPlanRepository, HostingAccountRepository, SubdomainRepository.
-- `app/Validators/` — Registration, Login, HostingPlanValidator, HostingAccountValidator.
+- `app/Validators/` — Registration, Login, HostingPlanValidator, HostingAccountValidator (DB name/user regex in DatabaseService).
 - `app/Security/` — Csrf, RateLimiter, PathGuard, UploadGuard, Logger.
 - `app/Helpers/` — Database (PDO singleton), Router, View, helpers.php (e()).
 - `app/Models/` — User, HostingPlan, HostingAccount, Subdomain.
 - `app/Middleware/` — Auth, Rbac, Csrf.
-- `app/Views/` — PHP templates (auth, hosting, admin/plans, admin/hosting, dashboard, files) with Bootstrap 5 CDN, escaped via `e()`.
+- `app/Views/` — PHP templates (auth, hosting, admin/plans, admin/hosting, dashboard, files, databases, admin/databases) with Bootstrap 5 CDN, escaped via `e()`.
 - `config/` — app.php, database.php, session.php, bootstrap.php (env load, error handling).
-- `database/migrations/` — 001..003 (no new Phase 3 migration — file manager uses filesystem, not DB), runner `scripts/migrate.php`.
+- `database/migrations/` — 001..003 (no new Phase 4 migration — database hosting uses existing `customer_databases`/`database_users`), runner `scripts/migrate.php`.
 - `storage/` — logs, cache, sessions, uploads, hosting (mock jail: storage/hosting/{username}_{rand}/public_html + subdomains), all `Require all denied`; file manager jailed via PathGuard.
-- `routes/web.php` — central route table (GET/POST) with Auth/RBAC/CSRF groups for hosting, admin, and files (`/hosting/{id}/files`).
+- `routes/web.php` — central route table (GET/POST) with Auth/RBAC/CSRF groups for hosting, admin, files (`/hosting/{id}/files`), databases (`/hosting/{id}/databases`).
 - `scripts/` — migrate, create-admin, generate-key.
 
 ## Key Design Decisions
@@ -38,11 +38,12 @@ HTTP → public/index.php (version guard, bootstrap, session, security headers)
 - **Password hashing** — `PASSWORD_ARGON2ID` if available else `PASSWORD_BCRYPT` cost 12, rehash on login.
 - **Customer DB passwords** — per correction, not stored as hash. Phase 1 schema uses `encrypted_password TEXT NULL` (future: authenticated encryption outside DB). Shown once on creation, reset via regeneration.
 - **Separation control-panel vs customer code** — `storage/hosting/{account}/public_html` is not under `public/` origin; `.htaccess php_flag engine off` in storage; future Linux will use PHP-FPM pools.
-- **Provisioning abstraction** — `HostingProvisionerInterface` with `LocalMockProvisioner` (Phase 2/3). Creates safe `storage/hosting/.../public_html` + `.htaccess` + `.suspended/.terminated` flags; no shell. Future `LinuxProvisioner` will be Phase 7.
+- **Provisioning abstraction** — `HostingProvisionerInterface` with `LocalMockProvisioner` (Phase 2-4). Creates safe `storage/hosting/.../public_html` + `.htaccess` + flags; database methods are mock logs only (no root, no exec). Future `LinuxProvisioner` will be Phase 7.
 - **Hosting lifecycle** — `HostingService` enforces pending→active→suspended→terminated, ownership, quotas (subdomain/database/domain) in service layer, not UI.
 - **Subdomains** — `subdomain.freehost.example` where main domain from `system_settings.main_domain` or `APP_DOMAIN`; strict validation, quota, duplicate guard, mock provisioner.
 - **File Manager** — `FileService` (Phase 3) enforces isolation via `PathGuard::resolve(root, relative)` for every op; `UploadGuard` for extension/MIME/size; quota via `calcUsage` vs `plan.storageLimitMb`; atomic writes; text edit allow-list 512KB; audit for every op; no customer PHP execution via control panel.
-- **Phase 3 boundaries** — databases (Phase 4), real DNS/SSL/billing still deferred. Local mock remains safe (no exec).
+- **Database Hosting** — `DatabaseService` (Phase 4) generates safe names `fh_{accountId}_{part}` (`^[a-z][a-z0-9_]{2,29}$`, reserved block, no spaces/quotes), quota `plan.databaseLimit`, mock provisioner (no `CREATE DATABASE` as root), password `random_bytes` 16 chars + encrypted with `APP_KEY` (`sodium`/`AES-GCM`), shown once, never logged, audit safe.
+- **Phase 4 boundaries** — real DNS/SSL/billing, production MySQL provisioning still deferred. Local mock remains least-privilege.
 
 ## Security Headers (public/index.php)
 - `X-Content-Type-Options: nosniff`

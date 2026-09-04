@@ -10,6 +10,8 @@ use App\Controllers\HostingController;
 use App\Controllers\PlanController;
 use App\Controllers\AdminHostingController;
 use App\Controllers\FileController;
+use App\Controllers\DatabaseController;
+use App\Controllers\AdminDatabaseController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\RbacMiddleware;
@@ -79,3 +81,15 @@ $router->get('/hosting/{id}/files/create', [FileController::class, 'createForm']
 $router->post('/hosting/{id}/files/create', [FileController::class, 'create'], [CsrfMiddleware::class, AuthMiddleware::class]);
 $router->get('/hosting/{id}/files/edit', [FileController::class, 'edit'], [AuthMiddleware::class]);
 $router->post('/hosting/{id}/files/edit', [FileController::class, 'saveEdit'], [CsrfMiddleware::class, AuthMiddleware::class]);
+
+// Database Hosting — customer
+$router->get('/hosting/{id}/databases', [DatabaseController::class, 'index'], [AuthMiddleware::class]);
+$router->post('/hosting/{id}/databases', [DatabaseController::class, 'create'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->post('/hosting/{id}/databases/delete', [DatabaseController::class, 'delete'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->get('/hosting/{id}/databases/{dbId}', [DatabaseController::class, 'show'], [AuthMiddleware::class]);
+$router->post('/hosting/{id}/databases/{dbId}/users', [DatabaseController::class, 'createUser'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->post('/hosting/{id}/databases/users/delete', [DatabaseController::class, 'deleteUser'], [CsrfMiddleware::class, AuthMiddleware::class]);
+
+// Admin Database Hosting
+$router->get('/admin/databases', [AdminDatabaseController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/databases/{id}', [AdminDatabaseController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);

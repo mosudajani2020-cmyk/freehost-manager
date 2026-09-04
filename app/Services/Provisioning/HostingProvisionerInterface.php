@@ -19,4 +19,9 @@ interface HostingProvisionerInterface
     public function terminateHostingAccount(HostingAccount $account): ProvisionResult;
     public function createSubdomain(HostingAccount $account, string $subdomain, string $fullDomain): ProvisionResult;
     public function deleteSubdomain(HostingAccount $account, string $fullDomain): ProvisionResult;
+    // Phase 4 — Database hosting (mock by default, least-privilege in production)
+    public function createDatabase(HostingAccount $account, string $dbName): ProvisionResult;
+    public function deleteDatabase(HostingAccount $account, string $dbName): ProvisionResult;
+    public function createDatabaseUser(HostingAccount $account, string $dbUsername, string $password): ProvisionResult;
+    public function deleteDatabaseUser(HostingAccount $account, string $dbUsername): ProvisionResult;
 }

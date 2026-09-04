@@ -1,17 +1,18 @@
 # FreeHost Manager
 
-Web hosting management platform — control panel for customers and admins. Phase 1 Foundation is implemented.
+Web hosting management platform — control panel for customers and admins. Phase 4 Database Hosting is implemented.
 
 ## Project Status
-**Phase 3 — File Manager ✅** (2026-09-04)
-- Phase 1 foundation + Phase 2 hosting preserved (93 tests)
-- File Manager: isolated `storage/hosting/{account}/public_html` via `PathGuard::resolve`, no absolute leak
-- Operations: list, navigate, mkdir, upload, download, rename, delete, create text, edit text (512KB, atomic)
-- UploadGuard: extension blocklist, MIME `finfo`, php sniff, size 20MB, quota `plan.storageLimitMb`, sanitized names, duplicate handling
-- Quota: `RecursiveDirectoryIterator` vs plan limit, bar `used/limit/remaining`, enforced server-side
-- Audit: `file.*` + `directory.*` with safe metadata, no secrets
-- UI: Bootstrap 5 responsive, breadcrumbs, quota bar, modals for rename/delete, textarea editor escaped
-- 93 automated tests, hardened docs
+**Phase 4 — Database Hosting ✅** (2026-09-04)
+- Phase 1-3 preserved (93 → 112 tests)
+- Database hosting: customer `fh_{accountId}_{name}` + `fh_{accountId}_u_{user}` naming, strict regex, reserved block, SQL injection guard
+- Mock provisioning via `LocalMockProvisioner` (no root, no exec) — logs only, least-privilege
+- Credentials: `random_bytes` 16 chars, encrypted with `APP_KEY` (`sodium`/`openssl` AES-GCM), shown once, never logged, decrypt via `DatabaseService::decryptPassword`
+- Quota: `plan.databaseLimit` enforced server-side (FREE 2, BASIC 5, PREMIUM 20)
+- Suspended/terminated accounts blocked
+- Customer UI: list/create/delete databases, create/delete users, show once password, connection info
+- Admin UI: view all databases/users, search, owner/hosting status
+- Audit: `database.create/delete`, `database.user_create/delete` with safe metadata, no password
 
 ## Requirements
 - **PHP 8.3+** (fails safe on <8.3)
@@ -37,9 +38,9 @@ C:\php83\php.exe scripts/create-admin.php
 - HTML5, CSS3, Bootstrap 5, JavaScript
 - PHP 8.3, PDO, `vlucas/phpdotenv`
 - MySQL/MariaDB, Apache
-- PHPUnit 10 (93 tests)
+- PHPUnit 10 (112 tests)
 
-## Security (Phase 3)
+## Security (Phase 4)
 Implemented: prepared statements, `e()` escaping, CSP, CSRF synchronizer, RBAC server-side, PathGuard, UploadGuard, session fixation protection, rate limiting, audit logs. See `docs/security.md`.
 
 ## Documentation

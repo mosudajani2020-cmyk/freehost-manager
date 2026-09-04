@@ -1,4 +1,4 @@
-# Security — FreeHost Manager (Phase 3)
+# Security — FreeHost Manager (Phase 4)
 
 ## Baseline (Phase 1 implemented)
 - **SQL Injection** — PDO prepared statements everywhere (`Database::query` with `prepare/execute`). No concatenation. Tests include `' OR 1=1 --` payload in validators.
@@ -52,6 +52,20 @@ Set in `public/index.php` and `.htaccess`:
 ## Verification (Phase 3)
 - **93 PHPUnit tests (PHP 8.3):** 56 prior + 37 Phase3FileManager covering list own/block another/IDOR/traversal/encoded/null/absolute/Windows/Linux/escape/.env/delete root/rename outside/download outside/upload outside/invalid names/extensions/oversized/quota/duplicate/suspended/terminated/unauth/CSRF/XSS/malicious/audit/no secrets/edit ownership/size/rename/mkdir/delete/download/quota/php upload.
 - Manual (php83 -S): login → hosting → File Manager → browse `/public_html` → mkdir → upload txt → duplicate auto-rename → create text → edit → rename → download → delete → quota bar updates; suspended account blocked.
+
+## Phase 4 Additions — Database Hosting
+- **Naming:** generated `fh_{accountId}_{part}` and `fh_{accountId}_u_{part}`, validated `^[a-z][a-z0-9_]{2,29}$`, reserved (`mysql` etc.), no spaces/quotes/`;`/`--`, length 64/32, prevents SQL injection via identifier.
+- **Least-privilege:** never use root; `LocalMockProvisioner` only logs, no `CREATE DATABASE` as root; `freehost_app` has limited GRANT only on `freehost_manager.*`; no credentials in code/logs/Git/URLs.
+- **Credentials:** `random_bytes` 16 chars (upper/lower/digit/symbol), encrypted with `APP_KEY` (`sodium_secretbox` or `AES-GCM`), stored `encrypted_password`, shown once via flash, never logged, decrypt via `DatabaseService::decryptPassword`, not in audit metadata.
+- **Ownership/IDOR:** every DB/user op checks `hosting_account.user_id===actorId` and `status==='active'`; URL ID tampering → 403; cross-customer access blocked.
+- **Quota:** `plan.databaseLimit` enforced server-side (FREE 2) — tested; no trust in browser.
+- **Suspended/terminated:** blocked for create/delete/user ops.
+- **CSRF:** all POST (`/databases`, `/databases/delete`, `/databases/{id}/users`) via `CsrfMiddleware`.
+- **Audit:** `database.create/delete`, `database.user_create/delete` with safe metadata (name, username, not password).
+
+## Verification (Phase 4)
+- **112 PHPUnit tests (PHP 8.3):** 93 prior + 19 Phase4Database covering creation/ownership/IDOR/duplicate/invalid/SQLi/quota/suspended/terminated/user create/unauthorized/duplicate/invalid names/unauthorized deletion/audit/secret leakage/CSRF/no exec/XSS.
+- Manual (php83 -S): hosting → Databases → create `mydb` → duplicate rejected → invalid `bad name` rejected → quota 2 → create user `myuser` → password shown once → duplicate user rejected → delete user → delete db → admin `/admin/databases` view.
 
 ## Recommendations Before Production
 - Upgrade AppServ PHP 7.3 → 8.3, Apache 2.4.41 → latest, set `expose_php Off`, `display_errors Off`, `session.cookie_secure 1`, `open_basedir` per vhost.

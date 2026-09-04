@@ -25,9 +25,11 @@
           <?php endif; ?>
           <div class="mt-3 d-grid gap-2">
             <?php if ($account->status==='active'): ?>
-              <a href="/hosting/<?= (int) $account->id ?>/files" class="btn btn-primary"><i class="fa-solid fa-folder-open me-1"></i>Open File Manager</a>
+              <a href="/hosting/<?= (int) $account->id ?>/files" class="btn btn-primary"><i class="fa-solid fa-folder-open me-1"></i>File Manager</a>
+              <a href="/hosting/<?= (int) $account->id ?>/databases" class="btn btn-outline-primary"><i class="fa-solid fa-database me-1"></i>Databases (<?= count($subdomains) ?> subs)</a>
             <?php else: ?>
               <a href="/hosting/<?= (int) $account->id ?>/files" class="btn btn-secondary disabled">File Manager (requires active)</a>
+              <a href="/hosting/<?= (int) $account->id ?>/databases" class="btn btn-secondary disabled">Databases (requires active)</a>
             <?php endif; ?>
           </div>
         </div>

@@ -115,4 +115,31 @@ final class LocalMockProvisioner implements HostingProvisionerInterface
         error_log("[Provision] deleteSubdomain id={$account->id} {$fullDomain}");
         return ProvisionResult::ok('Subdomain deleted (mock)');
     }
+
+    public function createDatabase(HostingAccount $account, string $dbName): ProvisionResult
+    {
+        // Mock: no real MySQL CREATE DATABASE (would require elevated privileges)
+        // Validate name already done in service; just log
+        error_log("[Provision] createDatabase id={$account->id} db={$dbName} (mock)");
+        return ProvisionResult::ok('Database created (mock)', ['dbName'=>$dbName]);
+    }
+
+    public function deleteDatabase(HostingAccount $account, string $dbName): ProvisionResult
+    {
+        error_log("[Provision] deleteDatabase id={$account->id} db={$dbName} (mock)");
+        return ProvisionResult::ok('Database deleted (mock)');
+    }
+
+    public function createDatabaseUser(HostingAccount $account, string $dbUsername, string $password): ProvisionResult
+    {
+        // Mock: do not create real MySQL user; password is not logged
+        error_log("[Provision] createDatabaseUser id={$account->id} user={$dbUsername} (mock, password not logged)");
+        return ProvisionResult::ok('Database user created (mock)', ['username'=>$dbUsername]);
+    }
+
+    public function deleteDatabaseUser(HostingAccount $account, string $dbUsername): ProvisionResult
+    {
+        error_log("[Provision] deleteDatabaseUser id={$account->id} user={$dbUsername} (mock)");
+        return ProvisionResult::ok('Database user deleted (mock)');
+    }
 }
