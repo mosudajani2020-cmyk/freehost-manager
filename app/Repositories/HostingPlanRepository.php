@@ -46,7 +46,7 @@ final class HostingPlanRepository
     public function create(array $data): HostingPlan
     {
         $this->db->query(
-            "INSERT INTO hosting_plans (name, slug, description, storage_limit_mb, bandwidth_limit_mb, database_limit, domain_limit, subdomain_limit, status, is_default) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT INTO hosting_plans (name, slug, description, storage_limit_mb, bandwidth_limit_mb, database_limit, domain_limit, subdomain_limit, backup_limit, email_limit, price_cents, currency, status, is_default) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             [
                 $data['name'],
                 $data['slug'],
@@ -56,6 +56,10 @@ final class HostingPlanRepository
                 $data['database_limit'],
                 $data['domain_limit'],
                 $data['subdomain_limit'],
+                $data['backup_limit'] ?? 3,
+                $data['email_limit'] ?? 1,
+                $data['price_cents'] ?? 0,
+                $data['currency'] ?? 'USD',
                 $data['status'] ?? 'active',
                 $data['is_default'] ?? 0,
             ]
@@ -66,7 +70,7 @@ final class HostingPlanRepository
     public function update(int $id, array $data): HostingPlan
     {
         $this->db->query(
-            "UPDATE hosting_plans SET name=?, slug=?, description=?, storage_limit_mb=?, bandwidth_limit_mb=?, database_limit=?, domain_limit=?, subdomain_limit=?, status=?, is_default=?, updated_at=NOW() WHERE id=?",
+            "UPDATE hosting_plans SET name=?, slug=?, description=?, storage_limit_mb=?, bandwidth_limit_mb=?, database_limit=?, domain_limit=?, subdomain_limit=?, backup_limit=?, email_limit=?, price_cents=?, currency=?, status=?, is_default=?, updated_at=NOW() WHERE id=?",
             [
                 $data['name'],
                 $data['slug'],
@@ -76,6 +80,10 @@ final class HostingPlanRepository
                 $data['database_limit'],
                 $data['domain_limit'],
                 $data['subdomain_limit'],
+                $data['backup_limit'] ?? 3,
+                $data['email_limit'] ?? 1,
+                $data['price_cents'] ?? 0,
+                $data['currency'] ?? 'USD',
                 $data['status'] ?? 'active',
                 $data['is_default'] ?? 0,
                 $id,

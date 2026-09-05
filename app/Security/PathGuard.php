@@ -60,6 +60,11 @@ final class PathGuard
             }
         }
 
+        // Symlink protection: block if resolved path is symlink or parent is symlink
+        if (is_link($resolved) || is_link(dirname($resolved))) {
+            throw new \RuntimeException('Symlink access blocked');
+        }
+
         return $resolved;
     }
 

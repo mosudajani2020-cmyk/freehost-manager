@@ -1,4 +1,4 @@
-# Security — FreeHost Manager (Phase 7)
+# Security — FreeHost Manager (Phase 9 — Hardened)
 
 ## Baseline (Phase 1 implemented)
 - **SQL Injection** — PDO prepared statements everywhere (`Database::query` with `prepare/execute`). No concatenation. Tests include `' OR 1=1 --` payload in validators.

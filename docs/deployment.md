@@ -88,3 +88,12 @@ Provisioning Service / API (restricted worker)
 ## Limitations (Phase 7)
 - No real bandwidth metering (mock), no real filesystem backup (metadata only, no `tar`), no destructive retention deletion, no background cron (manual `collect`/`expire`). Production will use `quota` filesystem, `restic`/`borg`, Prometheus/Grafana, async workers.
 
+## Phase 9 — Hardening (Production)
+- **APP_DEBUG=false** in production, `display_errors 0`, generic 500 page, no stack traces, `log_errors 1`, HSTS `max-age=63072000` via PHP + `.htaccess` `env=HTTPS`, `HttpOnly` `SameSite=Lax` secure cookies, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, CSP `default-src 'self'` + `Content-Security-Policy` in both PHP and `.htaccess`.
+- **.env** blocked via `public/.htaccess` `RedirectMatch 404` + `Require all denied`, `storage/.htaccess` `Require all denied`, no dev server in prod.
+- **DB:** `freehost_app` least-privilege `SELECT/INSERT/UPDATE/DELETE/CREATE/ALTER/INDEX/DROP/REFERENCES` only on `freehost_manager.*`, indexes on `users.username/email`, `hosting_accounts(user_id)`, `provisioning_jobs(idempotency_key)`, `backups(expires_at)`, FKs with `CASCADE/RESTRICT`, migrations safe `IF NOT EXISTS` without DDL transactions.
+- **Filesystem:** `PathGuard` symlink block `is_link`, quota via `calcUsage` with `RecursiveDirectoryIterator`, `UploadGuard` blocklist, `isSafeFilename` `CON`/`<>:`, safe `rrmdir` child-first, `rename` no overwrite, `delete` no root.
+- **Provisioning:** HMAC `X-Signature` 5-min TTL + nonce `rate_limits`, idempotency `UNIQUE`, retry max 3, `last_error`, audit `provisioning.*`, no `exec`, `LocalMock*` only.
+- **Tests:** 179 tests (20 new hardening), `composer audit` clean, `php -l` all, `migrations` idempotent, `grep` no `exec`/`password` in logs, `APP_DEBUG` check, headers check, `PathGuard` symlink check.
+- **Production Checklist:** `APP_ENV=production` `APP_DEBUG=false` `SESSION_SECURE=true` `SESSION_SAMESITE=Strict` HTTPS, `composer install --no-dev --optimize-autoloader`, `php artisan` not needed, `storage/logs` 0755, `storage/sessions` 0700, `APP_KEY` base64 32 bytes, `DB_PASSWORD` strong, `WEBHOOK_SECRET` random, `APP_DOMAIN` real, `php -S` never in prod.
+

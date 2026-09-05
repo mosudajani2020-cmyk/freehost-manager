@@ -25,9 +25,15 @@ use App\Middleware\RbacMiddleware;
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+header('X-XSS-Protection: 0'); // Disable legacy XSS filter, rely on CSP
 if (!headers_sent()) {
     // CSP minimal — allow Bootstrap CDN, self scripts/styles
     header("Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'unsafe-inline'; font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; img-src 'self' data: https:; connect-src 'self'");
+    // HSTS for HTTPS (production)
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        header('Strict-Transport-Security: max-age=63072000; includeSubDomains; preload');
+    }
 }
 
 // Session bootstrap — secure defaults

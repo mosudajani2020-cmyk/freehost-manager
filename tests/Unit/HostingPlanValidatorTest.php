@@ -20,6 +20,9 @@ final class HostingPlanValidatorTest extends TestCase
             'database_limit' => 2,
             'domain_limit' => 1,
             'subdomain_limit' => 2,
+            'backup_limit' => 3,
+            'email_limit' => 1,
+            'price_cents' => 0,
         ]);
         $this->assertEmpty($errors);
     }
@@ -34,10 +37,14 @@ final class HostingPlanValidatorTest extends TestCase
             'database_limit' => -1,
             'domain_limit' => -1,
             'subdomain_limit' => -1,
+            'backup_limit' => -1,
+            'email_limit' => -1,
+            'price_cents' => -1,
         ]);
         $this->assertArrayHasKey('storage_limit_mb', $errors);
         $this->assertArrayHasKey('bandwidth_limit_mb', $errors);
         $this->assertArrayHasKey('database_limit', $errors);
+        $this->assertArrayHasKey('backup_limit', $errors);
     }
 
     public function testInvalidSlug(): void
@@ -50,6 +57,9 @@ final class HostingPlanValidatorTest extends TestCase
             'database_limit' => 2,
             'domain_limit' => 1,
             'subdomain_limit' => 2,
+            'backup_limit' => 3,
+            'email_limit' => 1,
+            'price_cents' => 0,
         ]);
         $this->assertArrayHasKey('slug', $errors);
     }

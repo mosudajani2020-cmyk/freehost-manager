@@ -3,14 +3,14 @@
 Web hosting management platform — control panel for customers and admins. Phase 4 Database Hosting is implemented.
 
 ## Project Status
-**Phase 7 — Usage, Backups and Monitoring ✅** (2026-09-04)
-- Phase 1-6 preserved (145 → 159 tests)
-- Usage: `UsageService` + `LocalMockUsageCollector` (storage/bandwidth/database/domain, `usage_records` daily snapshots, quota warnings `>90%`, ownership, IDOR)
-- Backups: `BackupService` + `LocalMockBackupProvider` (metadata only `full/incremental`, `pending/running/completed/failed/expired`, retention 7d, no destructive deletion, `storage/backups/...` mock path)
-- Monitoring: `MonitoringService` + `LocalMockMonitoringProvider` (`healthy/warning/critical/unknown` via failed jobs/backups, operational stats `users/hosting/databases/backups/audit`, `failed_jobs` reporting)
-- Customer: `GET /hosting/{id}/usage` (quota bars, collect), `GET /hosting/{id}/backups` (create/delete, retention)
-- Admin: `GET /admin/monitoring` (system health, provisioning health, stats, failed jobs, audit), `GET /admin/backups` + expire, `GET /admin/monitoring/usage`
-- 159 automated tests, hardened docs + `docs/deployment.md` (usage/backups/monitoring)
+**Phase 9 — Production Hardening and Security Review ✅** (2026-09-04)
+- Phase 1-8 preserved (159 → 179 tests, 1594 assertions)
+- Hardening: `APP_DEBUG=false`, secure `HttpOnly` `SameSite=Lax` cookies, HSTS, CSP, `X-Frame-Options`, `Permissions-Policy`, no `.env` exposure, no stack traces, no dev server in prod
+- DB: least-privilege `freehost_app`, indexes/FKs, safe migrations, `price_cents` fix for `0` (validator `FILTER_VALIDATE_INT === false`), transactions for quota
+- Filesystem: `PathGuard` symlink block, `quota` via `RecursiveDirectoryIterator`, `UploadGuard`, safe `rename/delete` with `isSafeFilename`, `rrmdir` child-first
+- Provisioning: `idempotency_key` UNIQUE, retry max 3, `last_error`, audit trail, no `exec`, `LocalMock*` only
+- Dependencies: `composer audit` clean, `vlucas/phpdotenv` + `phpunit` only, PHP `^8.3` required
+- 179 automated tests, 20 new hardening regression tests, hardened `docs/security.md` + `docs/deployment.md`
 
 ## Requirements
 - **PHP 8.3+** (fails safe on <8.3)
@@ -36,9 +36,9 @@ C:\php83\php.exe scripts/create-admin.php
 - HTML5, CSS3, Bootstrap 5, JavaScript
 - PHP 8.3, PDO, `vlucas/phpdotenv`
 - MySQL/MariaDB, Apache
-- PHPUnit 10 (159 tests)
+- PHPUnit 10 (179 tests)
 
-## Security (Phase 7)
+## Security (Phase 9)
 Implemented: prepared statements, `e()` escaping, CSP, CSRF synchronizer, RBAC server-side, PathGuard, UploadGuard, session fixation protection, rate limiting, audit logs. See `docs/security.md`.
 
 ## Documentation

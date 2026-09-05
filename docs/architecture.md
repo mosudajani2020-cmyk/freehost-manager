@@ -1,4 +1,4 @@
-# Architecture — FreeHost Manager (Phase 7)
+# Architecture — FreeHost Manager (Phase 9)
 
 ## Overview
 Modular monolith, PHP 8.3+, no framework. Separation:

@@ -26,16 +26,31 @@ final class HostingPlanValidator
         foreach (['storage_limit_mb'=>$storage, 'bandwidth_limit_mb'=>$bandwidth] as $k=>$v) {
             if ($v === null || $v === '' ) {
                 $errors[$k] = 'Required.';
-            } elseif (!filter_var($v, FILTER_VALIDATE_INT) || (int)$v < 0 || (int)$v > 1000000) {
+            } elseif (filter_var($v, FILTER_VALIDATE_INT) === false || (int)$v < 0 || (int)$v > 1000000) {
                 $errors[$k] = 'Must be integer 0-1000000.';
             }
         }
         foreach (['database_limit'=>$dbLimit, 'domain_limit'=>$domainLimit, 'subdomain_limit'=>$subLimit] as $k=>$v) {
             if ($v === null || $v === '') {
                 $errors[$k] = 'Required.';
-            } elseif (!filter_var($v, FILTER_VALIDATE_INT) || (int)$v < 0 || (int)$v > 1000) {
+            } elseif (filter_var($v, FILTER_VALIDATE_INT) === false || (int)$v < 0 || (int)$v > 1000) {
                 $errors[$k] = 'Must be integer 0-1000.';
             }
+        }
+        $backup = $data['backup_limit'] ?? null;
+        $email = $data['email_limit'] ?? null;
+        $price = $data['price_cents'] ?? null;
+        foreach (['backup_limit'=>$backup, 'email_limit'=>$email] as $k=>$v) {
+            if ($v === null || $v === '') {
+                $errors[$k] = 'Required.';
+            } elseif (filter_var($v, FILTER_VALIDATE_INT) === false || (int)$v < 0 || (int)$v > 1000) {
+                $errors[$k] = 'Must be integer 0-1000.';
+            }
+        }
+        if ($price === null || $price === '') {
+            $errors['price_cents'] = 'Required.';
+        } elseif (filter_var($price, FILTER_VALIDATE_INT) === false || (int)$price < 0 || (int)$price > 10000000) {
+            $errors['price_cents'] = 'Must be integer 0-10000000 (cents).';
         }
 
         return $errors;
