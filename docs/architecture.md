@@ -1,4 +1,4 @@
-# Architecture — FreeHost Manager (Phase 6)
+# Architecture — FreeHost Manager (Phase 7)
 
 ## Overview
 Modular monolith, PHP 8.3+, no framework. Separation:
@@ -44,7 +44,7 @@ HTTP → public/index.php (version guard, bootstrap, session, security headers)
 - **File Manager** — `FileService` (Phase 3) enforces isolation via `PathGuard::resolve(root, relative)` for every op; `UploadGuard` for extension/MIME/size; quota via `calcUsage` vs `plan.storageLimitMb`; atomic writes; text edit allow-list 512KB; audit for every op; no customer PHP execution via control panel.
 - **Database Hosting** — `DatabaseService` (Phase 4) generates safe names `fh_{accountId}_{part}` (`^[a-z][a-z0-9_]{2,29}$`, reserved block, no spaces/quotes), quota `plan.databaseLimit`, mock provisioner (no `CREATE DATABASE` as root), password `random_bytes` 16 chars + encrypted with `APP_KEY` (`sodium`/`AES-GCM`), shown once, never logged, audit safe.
 - **DNS/SSL (Phase 6)** — `DnsService` + `SslService` with `DnsProviderInterface`/`CertificateProviderInterface` + `DomainProviderInterface` + `LocalMock*` (no real DNS/LETS Encrypt), strict hostname validation, duplicate `hostname` UNIQUE, takeover prevention (must be subdomain of `APP_DOMAIN`), lifecycle `dns: pending/active/failed/suspended/removed` + `ssl: pending/issuing/active/renewing/expired/failed/revoked` synced to `subdomains.dns_status/ssl_status`, audit, no secrets.
-- **Phase 6 boundaries** — real DNS/ACME still mocked; no public DNS modification.
+- **Usage/Backups/Monitoring (Phase 7)** — `UsageService` + `LocalMockUsageCollector` (storage via `RecursiveDirectoryIterator`, bandwidth mock), `BackupService` + `LocalMockBackupProvider` (metadata only `full/incremental` 7d default, `pending/running/completed/failed/expired`), `MonitoringService` + `LocalMockMonitoringProvider` (`healthy/warning/critical/unknown` via failed jobs/backups, operational stats). `usage_records` daily snapshots, `backups` retention, no destructive deletion.
 
 ## Security Headers (public/index.php)
 - `X-Content-Type-Options: nosniff`

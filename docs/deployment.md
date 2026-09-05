@@ -80,3 +80,11 @@ Provisioning Service / API (restricted worker)
 ## Limitations (Phase 6)
 - No real DNS API, no real ACME, no public DNS modification. All `LocalMock*` logs only. No private keys in Git.
 
+## Phase 7 — Usage/Backups/Monitoring (Local Mock)
+- **Usage:** `UsageService` + `LocalMockUsageCollector` (storage via `RecursiveDirectoryIterator` on `storage/hosting`, bandwidth mock). `usage_records` snapshotted via `POST /hosting/{id}/usage/collect` (CSRF, ownership), aggregated `daily/monthly` mock.
+- **Backups:** `BackupService` + `LocalMockBackupProvider` (metadata only, `pending→running→completed/failed→expired`, retention 7d default, `file_path` `storage/backups/...` not actually created, no destructive deletion). Customer `GET/POST /hosting/{id}/backups`, admin `GET /admin/backups` + `POST /admin/backups/expire` (marks `expired` where `expires_at < NOW()`).
+- **Monitoring:** `MonitoringService` + `LocalMockMonitoringProvider` (`healthy` if `failed<1`, `warning` if `failed>0`, `critical` if `failed>5`, plus `failed_backups`). Admin `GET /admin/monitoring` (system health, provisioning health, stats, failed jobs, audit).
+
+## Limitations (Phase 7)
+- No real bandwidth metering (mock), no real filesystem backup (metadata only, no `tar`), no destructive retention deletion, no background cron (manual `collect`/`expire`). Production will use `quota` filesystem, `restic`/`borg`, Prometheus/Grafana, async workers.
+

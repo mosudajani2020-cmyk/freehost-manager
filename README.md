@@ -3,15 +3,14 @@
 Web hosting management platform — control panel for customers and admins. Phase 4 Database Hosting is implemented.
 
 ## Project Status
-**Phase 6 — DNS and SSL Management ✅** (2026-09-04)
-- Phase 1-5 preserved (127 → 145 tests)
-- DNS: `dns_records` + `DnsService` + `LocalMockDnsProvider` (strict hostname validation, duplicate takeover prevention, `pending/active/failed/suspended/removed`, `subdomains.dns_status` sync, no real DNS API)
-- SSL: `ssl_certificates` + `SslService` + `LocalMockCertificateProvider` (lifecycle `pending/issuing/active/renewing/expired/failed/revoked`, 90d mock, `subdomains.ssl_status` sync, no Let's Encrypt)
-- Providers: `Domain/Dns/CertificateProviderInterface` + `LocalMock*` (no real API keys, no `exec`)
-- Subdomains auto-create DNS `A` + SSL `active` via `HostingService` (mock)
-- Customer: view assigned domain/subdomains, DNS/SSL status, create/remove subdomains, request/renew/revoke SSL (mock) with ownership/IDOR, CSRF, audit
-- Admin: domain/DNS/SSL/provisioning status, `suspended`/`revoked` updates
-- 145 automated tests, hardened docs + `docs/deployment.md` (DNS/SSL)
+**Phase 7 — Usage, Backups and Monitoring ✅** (2026-09-04)
+- Phase 1-6 preserved (145 → 159 tests)
+- Usage: `UsageService` + `LocalMockUsageCollector` (storage/bandwidth/database/domain, `usage_records` daily snapshots, quota warnings `>90%`, ownership, IDOR)
+- Backups: `BackupService` + `LocalMockBackupProvider` (metadata only `full/incremental`, `pending/running/completed/failed/expired`, retention 7d, no destructive deletion, `storage/backups/...` mock path)
+- Monitoring: `MonitoringService` + `LocalMockMonitoringProvider` (`healthy/warning/critical/unknown` via failed jobs/backups, operational stats `users/hosting/databases/backups/audit`, `failed_jobs` reporting)
+- Customer: `GET /hosting/{id}/usage` (quota bars, collect), `GET /hosting/{id}/backups` (create/delete, retention)
+- Admin: `GET /admin/monitoring` (system health, provisioning health, stats, failed jobs, audit), `GET /admin/backups` + expire, `GET /admin/monitoring/usage`
+- 159 automated tests, hardened docs + `docs/deployment.md` (usage/backups/monitoring)
 
 ## Requirements
 - **PHP 8.3+** (fails safe on <8.3)
@@ -37,9 +36,9 @@ C:\php83\php.exe scripts/create-admin.php
 - HTML5, CSS3, Bootstrap 5, JavaScript
 - PHP 8.3, PDO, `vlucas/phpdotenv`
 - MySQL/MariaDB, Apache
-- PHPUnit 10 (145 tests)
+- PHPUnit 10 (159 tests)
 
-## Security (Phase 6)
+## Security (Phase 7)
 Implemented: prepared statements, `e()` escaping, CSP, CSRF synchronizer, RBAC server-side, PathGuard, UploadGuard, session fixation protection, rate limiting, audit logs. See `docs/security.md`.
 
 ## Documentation

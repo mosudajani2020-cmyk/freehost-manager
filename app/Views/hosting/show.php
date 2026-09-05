@@ -29,11 +29,15 @@
               <a href="/hosting/<?= (int) $account->id ?>/databases" class="btn btn-outline-primary"><i class="fa-solid fa-database me-1"></i>Databases</a>
               <a href="/hosting/<?= (int) $account->id ?>/dns" class="btn btn-outline-primary"><i class="fa-solid fa-network-wired me-1"></i>DNS</a>
               <a href="/hosting/<?= (int) $account->id ?>/ssl" class="btn btn-outline-primary"><i class="fa-solid fa-lock me-1"></i>SSL</a>
+              <a href="/hosting/<?= (int) $account->id ?>/usage" class="btn btn-outline-primary"><i class="fa-solid fa-chart-area me-1"></i>Usage</a>
+              <a href="/hosting/<?= (int) $account->id ?>/backups" class="btn btn-outline-primary"><i class="fa-solid fa-box-archive me-1"></i>Backups</a>
             <?php else: ?>
               <a href="/hosting/<?= (int) $account->id ?>/files" class="btn btn-secondary disabled">File Manager (requires active)</a>
               <a href="/hosting/<?= (int) $account->id ?>/databases" class="btn btn-secondary disabled">Databases (requires active)</a>
               <a href="/hosting/<?= (int) $account->id ?>/dns" class="btn btn-secondary disabled">DNS (requires active)</a>
               <a href="/hosting/<?= (int) $account->id ?>/ssl" class="btn btn-secondary disabled">SSL (requires active)</a>
+              <a href="/hosting/<?= (int) $account->id ?>/usage" class="btn btn-secondary disabled">Usage (requires active)</a>
+              <a href="/hosting/<?= (int) $account->id ?>/backups" class="btn btn-secondary disabled">Backups (requires active)</a>
             <?php endif; ?>
           </div>
         </div>

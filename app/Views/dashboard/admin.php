@@ -13,6 +13,8 @@
         <li class="nav-item"><a class="nav-link" href="/admin/databases"><i class="fa-solid fa-database me-2"></i>Databases</a></li>
         <li class="nav-item"><a class="nav-link" href="/admin/dns"><i class="fa-solid fa-globe me-2"></i>DNS</a></li>
         <li class="nav-item"><a class="nav-link" href="/admin/ssl"><i class="fa-solid fa-lock me-2"></i>SSL</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/monitoring"><i class="fa-solid fa-heart-pulse me-2"></i>Monitoring</a></li>
+        <li class="nav-item"><a class="nav-link" href="/admin/backups"><i class="fa-solid fa-box-archive me-2"></i>Backups</a></li>
       </ul>
     </nav>
     <main class="col-md-9 col-lg-10 p-4">

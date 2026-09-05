@@ -11,6 +11,8 @@
         <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/databases' : '/hosting' ?>"><i class="fa-solid fa-database me-2"></i>Databases</a></li>
         <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/dns' : '/hosting' ?>"><i class="fa-solid fa-globe me-2"></i>DNS</a></li>
         <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/ssl' : '/hosting' ?>"><i class="fa-solid fa-lock me-2"></i>SSL</a></li>
+        <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/usage' : '/hosting' ?>"><i class="fa-solid fa-chart-area me-2"></i>Usage</a></li>
+        <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/backups' : '/hosting' ?>"><i class="fa-solid fa-box-archive me-2"></i>Backups</a></li>
       </ul>
       <hr>
       <div class="small text-muted">

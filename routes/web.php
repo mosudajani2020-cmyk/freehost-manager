@@ -18,6 +18,10 @@ use App\Controllers\DnsController;
 use App\Controllers\SslController;
 use App\Controllers\AdminDnsController;
 use App\Controllers\AdminSslController;
+use App\Controllers\UsageController;
+use App\Controllers\BackupController;
+use App\Controllers\AdminMonitoringController;
+use App\Controllers\AdminBackupController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\RbacMiddleware;
@@ -126,3 +130,15 @@ $router->post('/admin/dns/{id}/status', [AdminDnsController::class, 'updateStatu
 $router->get('/admin/ssl', [AdminSslController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
 $router->get('/admin/ssl/{id}', [AdminSslController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
 $router->post('/admin/ssl/{id}/status', [AdminSslController::class, 'updateStatus'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+
+// Usage, Backups, Monitoring (Phase 7)
+$router->get('/hosting/{id}/usage', [UsageController::class, 'index'], [AuthMiddleware::class]);
+$router->post('/hosting/{id}/usage/collect', [UsageController::class, 'collect'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->get('/hosting/{id}/backups', [BackupController::class, 'index'], [AuthMiddleware::class]);
+$router->post('/hosting/{id}/backups', [BackupController::class, 'create'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->post('/hosting/{id}/backups/delete', [BackupController::class, 'delete'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->get('/admin/monitoring', [AdminMonitoringController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/monitoring/usage', [AdminMonitoringController::class, 'usage'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/backups', [AdminBackupController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/backups/{id}', [AdminBackupController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->post('/admin/backups/expire', [AdminBackupController::class, 'expire'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);

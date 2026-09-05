@@ -1,4 +1,4 @@
-# Security — FreeHost Manager (Phase 6)
+# Security — FreeHost Manager (Phase 7)
 
 ## Baseline (Phase 1 implemented)
 - **SQL Injection** — PDO prepared statements everywhere (`Database::query` with `prepare/execute`). No concatenation. Tests include `' OR 1=1 --` payload in validators.
@@ -93,6 +93,16 @@ Set in `public/index.php` and `.htaccess`:
 ## Verification (Phase 6)
 - **145 PHPUnit tests (PHP 8.3):** 127 prior + 18 Phase6DnsSsl covering hostname validation/IDOR/duplicate/suspended/terminated/CSRF/ownership/SSL lifecycle/provider failure/audit/secret leakage/takeover/invalid/no exec/XSS/DNS+SSL lifecycle/provider interfaces.
 - Manual (php83 -S): hosting → DNS → create `test.freehost.example` → duplicate rejected → invalid `bad..` rejected → suspended blocked → SSL → request `test.freehost.example` → active → renew → revoke → admin `/admin/dns` + `/admin/ssl` status updates; customer cannot see another's DNS (403).
+
+## Phase 7 Additions — Usage/Backups/Monitoring
+- **Usage:** `UsageService` collects `storage/bandwidth/database/domain` via `LocalMockUsageCollector`, records `usage_records` per type, calculates quota warnings (`>90%`), ownership `hosting_account.user_id`, IDOR blocked, `daily/monthly` via `aggregate` mock.
+- **Backups:** `BackupService` `pending→running→completed/failed→expired` (no destructive deletion, retention 1-365d, max 2 pending), mock provider (size 100KB-5MB, path `storage/backups/hosting_{id}/...`), ownership, CSRF, audit, no secrets in logs/file_path.
+- **Monitoring:** `MonitoringService` via `LocalMockMonitoringProvider` (`healthy/warning/critical` based on `failed_provisioning_jobs>5` critical, `>0` warning, `failed_backups>3` warning), operational stats (`total_users`, `hosting_*`, `databases`, `backups`, `audit_24h`), admin-only via `Rbac(admin)`.
+- **No shell:** no `exec` in `app/`, backup metadata only, no filesystem deletion via web, retention `expired` not `DELETE`.
+
+## Verification (Phase 7)
+- **159 PHPUnit tests (PHP 8.3):** 145 prior + 14 Phase7UsageBackupMonitoring covering usage calculation/quota/ownership/IDOR/backup lifecycle (pending→completed→expired→delete)/failed handling/monitoring healthy/failed jobs/audit/failure/authorization/secret leakage/no exec/provider interfaces.
+- Manual (php83 -S): hosting → Usage → Collect Now → warnings; Backups → create full 7d → completed → delete → expired via `expireOld`; admin `/admin/monitoring` shows `healthy/warning` + stats + failed jobs + audit; `/admin/backups` search + expire.
 
 ## Recommendations Before Production
 - Upgrade AppServ PHP 7.3 → 8.3, Apache 2.4.41 → latest, set `expose_php Off`, `display_errors Off`, `session.cookie_secure 1`, `open_basedir` per vhost.
