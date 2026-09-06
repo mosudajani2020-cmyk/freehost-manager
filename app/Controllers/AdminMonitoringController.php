@@ -8,14 +8,14 @@ use App\Helpers\Database;
 use App\Helpers\View;
 use App\Services\AuditService;
 use App\Services\MonitoringService;
-use App\Services\Providers\LocalMockMonitoringProvider;
+use App\Services\Providers\ProviderFactory;
 
 final class AdminMonitoringController
 {
     private function service(): MonitoringService
     {
         $db = Database::getInstance();
-        return new MonitoringService($db, new LocalMockMonitoringProvider($db), new AuditService($db));
+        return new MonitoringService($db, ProviderFactory::monitoring(), new AuditService($db));
     }
 
     public function index(array $params = []): void

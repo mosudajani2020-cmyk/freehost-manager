@@ -10,14 +10,14 @@ use App\Repositories\HostingAccountRepository;
 use App\Repositories\BackupRepository;
 use App\Services\AuditService;
 use App\Services\BackupService;
-use App\Services\Providers\LocalMockBackupProvider;
+use App\Services\Providers\ProviderFactory;
 
 final class BackupController
 {
     private function service(): BackupService
     {
         $db = Database::getInstance();
-        return new BackupService($db, new HostingAccountRepository($db), new BackupRepository($db), new LocalMockBackupProvider(), new AuditService($db));
+        return new BackupService($db, new HostingAccountRepository($db), new BackupRepository($db), ProviderFactory::backup(), new AuditService($db));
     }
 
     public function index(array $params = []): void

@@ -25,7 +25,8 @@
     },
     "scripts": {
         "test": "phpunit",
-        "migrate": "php scripts/migrate.php"
+        "migrate": "php scripts/migrate.php",
+        "worker": "php scripts/worker.php"
     },
     "config": {
         "optimize-autoloader": true,

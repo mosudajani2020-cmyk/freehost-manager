@@ -9,7 +9,7 @@ use App\Helpers\View;
 use App\Repositories\SslCertificateRepository;
 use App\Repositories\HostingAccountRepository;
 use App\Services\SslService;
-use App\Services\Providers\LocalMockCertificateProvider;
+use App\Services\Providers\ProviderFactory;
 use App\Services\AuditService;
 
 final class AdminSslController
@@ -51,7 +51,7 @@ final class AdminSslController
         $id = (int)($params['id'] ?? 0);
         $status = trim($_POST['status'] ?? '');
         $db = Database::getInstance();
-        $service = new SslService($db, new HostingAccountRepository($db), new SslCertificateRepository($db), new LocalMockCertificateProvider(), new AuditService($db));
+        $service = new SslService($db, new HostingAccountRepository($db), new SslCertificateRepository($db), ProviderFactory::ssl(), new AuditService($db));
         try {
             $service->updateStatus((int)($_SESSION['user_id'] ?? 0), $id, $status);
             $_SESSION['_flash'] = ['success'=>'SSL status updated'];

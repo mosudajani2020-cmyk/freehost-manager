@@ -10,14 +10,14 @@ use App\Repositories\HostingAccountRepository;
 use App\Repositories\DnsRecordRepository;
 use App\Services\AuditService;
 use App\Services\DnsService;
-use App\Services\Providers\LocalMockDnsProvider;
+use App\Services\Providers\ProviderFactory;
 
 final class DnsController
 {
     private function service(): DnsService
     {
         $db = Database::getInstance();
-        return new DnsService($db, new HostingAccountRepository($db), new DnsRecordRepository($db), new LocalMockDnsProvider(), new AuditService($db));
+        return new DnsService($db, new HostingAccountRepository($db), new DnsRecordRepository($db), ProviderFactory::dns(), new AuditService($db));
     }
 
     public function index(array $params = []): void

@@ -10,14 +10,14 @@ use App\Repositories\HostingAccountRepository;
 use App\Repositories\HostingPlanRepository;
 use App\Services\AuditService;
 use App\Services\DatabaseService;
-use App\Services\Provisioning\LocalMockProvisioner;
+use App\Services\Providers\ProviderFactory;
 
 final class DatabaseController
 {
     private function service(): DatabaseService
     {
         $db = Database::getInstance();
-        return new DatabaseService($db, new HostingAccountRepository($db), new HostingPlanRepository($db), new LocalMockProvisioner(), new AuditService($db));
+        return new DatabaseService($db, new HostingAccountRepository($db), new HostingPlanRepository($db), ProviderFactory::provisioner(), new AuditService($db));
     }
 
     public function index(array $params = []): void

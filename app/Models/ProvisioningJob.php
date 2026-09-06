@@ -22,6 +22,10 @@ final class ProvisioningJob
         public readonly string $createdAt,
         public readonly string $updatedAt,
         public readonly ?string $completedAt,
+        public readonly ?string $workerId = null,
+        public readonly ?string $claimedAt = null,
+        public readonly ?string $heartbeatAt = null,
+        public readonly ?string $nextAttemptAt = null,
     ) {}
 
     public static function fromArray(array $r): self
@@ -42,6 +46,10 @@ final class ProvisioningJob
             createdAt: $r['created_at'],
             updatedAt: $r['updated_at'],
             completedAt: $r['completed_at'] ?? null,
+            workerId: $r['worker_id'] ?? null,
+            claimedAt: $r['claimed_at'] ?? null,
+            heartbeatAt: $r['heartbeat_at'] ?? null,
+            nextAttemptAt: $r['next_attempt_at'] ?? null,
         );
     }
 

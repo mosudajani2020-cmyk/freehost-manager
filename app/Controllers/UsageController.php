@@ -10,14 +10,14 @@ use App\Repositories\HostingAccountRepository;
 use App\Repositories\HostingPlanRepository;
 use App\Services\AuditService;
 use App\Services\UsageService;
-use App\Services\Providers\LocalMockUsageCollector;
+use App\Services\Providers\ProviderFactory;
 
 final class UsageController
 {
     private function service(): UsageService
     {
         $db = Database::getInstance();
-        return new UsageService($db, new HostingAccountRepository($db), new HostingPlanRepository($db), new LocalMockUsageCollector($db), new AuditService($db));
+        return new UsageService($db, new HostingAccountRepository($db), new HostingPlanRepository($db), ProviderFactory::usage(), new AuditService($db));
     }
 
     public function index(array $params = []): void

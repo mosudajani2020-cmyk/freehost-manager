@@ -10,14 +10,14 @@ use App\Repositories\HostingAccountRepository;
 use App\Repositories\SslCertificateRepository;
 use App\Services\AuditService;
 use App\Services\SslService;
-use App\Services\Providers\LocalMockCertificateProvider;
+use App\Services\Providers\ProviderFactory;
 
 final class SslController
 {
     private function service(): SslService
     {
         $db = Database::getInstance();
-        return new SslService($db, new HostingAccountRepository($db), new SslCertificateRepository($db), new LocalMockCertificateProvider(), new AuditService($db));
+        return new SslService($db, new HostingAccountRepository($db), new SslCertificateRepository($db), ProviderFactory::ssl(), new AuditService($db));
     }
 
     public function index(array $params = []): void

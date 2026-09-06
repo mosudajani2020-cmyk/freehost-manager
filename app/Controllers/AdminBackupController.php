@@ -8,7 +8,7 @@ use App\Helpers\Database;
 use App\Helpers\View;
 use App\Repositories\BackupRepository;
 use App\Services\BackupService;
-use App\Services\Providers\LocalMockBackupProvider;
+use App\Services\Providers\ProviderFactory;
 use App\Repositories\HostingAccountRepository;
 use App\Services\AuditService;
 
@@ -49,7 +49,7 @@ final class AdminBackupController
     public function expire(array $params = []): void
     {
         $db = Database::getInstance();
-        $service = new BackupService($db, new HostingAccountRepository($db), new BackupRepository($db), new LocalMockBackupProvider(), new AuditService($db));
+        $service = new BackupService($db, new HostingAccountRepository($db), new BackupRepository($db), ProviderFactory::backup(), new AuditService($db));
         $count = $service->expireOld();
         $_SESSION['_flash'] = ['success'=>"Expired $count old backups"];
         header('Location: /admin/backups', true, 302);

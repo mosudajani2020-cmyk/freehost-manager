@@ -8,7 +8,7 @@ use App\Helpers\Database;
 use App\Helpers\View;
 use App\Repositories\DnsRecordRepository;
 use App\Services\DnsService;
-use App\Services\Providers\LocalMockDnsProvider;
+use App\Services\Providers\ProviderFactory;
 use App\Repositories\HostingAccountRepository;
 use App\Services\AuditService;
 
@@ -51,7 +51,7 @@ final class AdminDnsController
         $id = (int)($params['id'] ?? 0);
         $status = trim($_POST['status'] ?? '');
         $db = Database::getInstance();
-        $service = new DnsService($db, new HostingAccountRepository($db), new DnsRecordRepository($db), new LocalMockDnsProvider(), new AuditService($db));
+        $service = new DnsService($db, new HostingAccountRepository($db), new DnsRecordRepository($db), ProviderFactory::dns(), new AuditService($db));
         try {
             // Admin: allow any status, bypass ownership check via admin role (service will check admin via session)
             $service->updateStatus((int)($_SESSION['user_id'] ?? 0), $db->fetchColumn("SELECT hosting_account_id FROM dns_records WHERE id=?", [$id]) ?: 0, $id, $status);

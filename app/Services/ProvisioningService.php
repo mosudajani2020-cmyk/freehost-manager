@@ -9,7 +9,7 @@ use App\Repositories\HostingNodeRepository;
 use App\Repositories\ProvisioningJobRepository;
 use App\Models\ProvisioningJob;
 use App\Services\Provisioning\HostingProvisionerInterface;
-use App\Services\Provisioning\LocalMockProvisioner;
+use App\Services\Providers\ProviderFactory;
 
 final class ProvisioningService
 {
@@ -26,14 +26,19 @@ final class ProvisioningService
 
     public static function createDefault(Database $db, AuditService $audit): self
     {
-        return new self($db, new HostingNodeRepository($db), new ProvisioningJobRepository($db), new LocalMockProvisioner(), $audit);
+        return new self($db, new HostingNodeRepository($db), new ProvisioningJobRepository($db), ProviderFactory::provisioner(), $audit);
     }
 
     /**
      * Dispatch a provisioning job with idempotency.
      * Returns existing job if idempotency_key already exists.
+     *
+     * By default the job is processed synchronously in the web request (LocalMock
+     * behavior, preserved for backwards compatibility). Pass $async=true to leave
+     * the job queued in the provisioning_jobs table for a restricted worker
+     * (P1) to claim and process.
      */
-    public function dispatch(int $hostingAccountId, string $operation, array $payload = [], ?int $requestedBy = null, ?string $idempotencyKey = null, ?int $nodeId = null): ProvisioningJob
+    public function dispatch(int $hostingAccountId, string $operation, array $payload = [], ?int $requestedBy = null, ?string $idempotencyKey = null, ?int $nodeId = null, bool $async = false): ProvisioningJob
     {
         $validOps = ['createHostingAccount','suspendHostingAccount','activateHostingAccount','terminateHostingAccount','createSubdomain','deleteSubdomain','createDatabase','deleteDatabase','createDatabaseUser','deleteDatabaseUser'];
         if (!in_array($operation, $validOps, true)) {
@@ -84,8 +89,10 @@ final class ProvisioningService
 
         $this->audit->log($requestedBy, 'provisioning.queued', 'provisioning_job', (string)$job->id, 'success', ['operation'=>$operation, 'hosting'=>$hostingAccountId, 'node'=>$nodeId]);
 
-        // For local mock, process synchronously (future: async worker)
-        $this->processJob($job->id);
+        if (!$async) {
+            // For local mock, process synchronously (future: async worker)
+            $this->processJob($job->id);
+        }
 
         return $this->jobs->findById($job->id);
     }
@@ -136,6 +143,89 @@ final class ProvisioningService
             } else {
                 $this->jobs->updateAttemptsAndStatus($job->id, $attempts, 'retrying', $e->getMessage());
                 $this->audit->log($job->requestedBy, 'provisioning.retrying', 'provisioning_job', (string)$job->id, 'failure', ['error'=>$e->getMessage(), 'attempts'=>$attempts]);
+            }
+        }
+
+        return $this->jobs->findById($jobId);
+    }
+
+    /**
+     * Sanitize an error/message before persisting to last_error or logs so that
+     * credentials embedded in unexpected error strings are never leaked.
+     */
+    public static function sanitizeError(string $message): string
+    {
+        $patterns = [
+            '/(password|passwd|pwd)\s*[=:]\s*\S+/i' => '$1=[REDACTED]',
+            '/(api[_-]?key|access[_-]?key|secret|token|signature|authorization|credential)\s*[=:]\s*\S+/i' => '$1=[REDACTED]',
+            '/Bearer\s+[A-Za-z0-9._\-]+/i' => 'Bearer [REDACTED]',
+        ];
+        $sanitized = preg_replace(array_keys($patterns), array_values($patterns), $message);
+        return $sanitized === null ? $message : $sanitized;
+    }
+
+    /**
+     * Execute a job that has already been claimed by a worker (P1).
+     *
+     * The worker claims the job (repository claimNext) which increments attempts
+     * and moves status to 'provisioning'. This method then performs ONLY the
+     * allow-listed provisioner operation for the claimed job and records the
+     * outcome:
+     *   - success  -> status 'active'   (claim released, completed_at set)
+     *   - retryable failure -> status 'retrying' with a bounded backoff wait
+     *   - final failure      -> status 'failed'  (claim released, completed_at set)
+     *
+     * Ownership is enforced: a job claimed by a different worker cannot be
+     * executed or released by this call.
+     */
+    public function executeClaimedJob(int $jobId, string $workerId, int $backoffBaseSeconds = 5, int $backoffMaxSeconds = 300): ProvisioningJob
+    {
+        $job = $this->jobs->findById($jobId);
+        if (!$job) {
+            throw new \RuntimeException('Job not found', 404);
+        }
+        if ($job->status !== 'provisioning' || $job->workerId !== $workerId) {
+            throw new \RuntimeException('Job not claimed by this worker', 409);
+        }
+
+        // Refresh the lease heartbeat so a healthy long operation is not reclaimed.
+        $this->jobs->heartbeat($job->id, $workerId);
+
+        $acctRow = $this->db->fetch("SELECT * FROM hosting_accounts WHERE id=?", [$job->hostingAccountId]);
+        if (!$acctRow) {
+            $this->jobs->failClaimed($job->id, $workerId, 'Hosting account not found');
+            return $this->jobs->findById($jobId);
+        }
+        $acct = \App\Models\HostingAccount::fromArray($acctRow);
+        $planRow = $this->db->fetch("SELECT * FROM hosting_plans WHERE id=?", [$acct->planId]);
+        if ($planRow) {
+            $acct->plan = \App\Models\HostingPlan::fromArray($planRow);
+        }
+
+        $decoded = $job->payload !== null ? json_decode($job->payload, true) : [];
+        $payload = is_array($decoded) ? $decoded : [];
+
+        try {
+            $result = $this->executeOperation($acct, $job->operation, $payload);
+            if ($result->success) {
+                $this->jobs->completeClaimed($job->id, $workerId);
+                if ($job->operation === 'createHostingAccount' && $job->nodeId) {
+                    $this->nodes->incrementLoad($job->nodeId);
+                }
+                $this->audit->log($job->requestedBy, 'provisioning.active', 'provisioning_job', (string)$job->id, 'success', ['operation'=>$job->operation, 'attempts'=>$job->attempts]);
+            } else {
+                throw new \RuntimeException($result->message);
+            }
+        } catch (\Throwable $e) {
+            $attempts = $job->attempts;
+            $error = self::sanitizeError($e->getMessage());
+            if ($attempts >= $job->maxAttempts) {
+                $this->jobs->failClaimed($job->id, $workerId, $error);
+                $this->audit->log($job->requestedBy, 'provisioning.failed', 'provisioning_job', (string)$job->id, 'failure', ['error'=>$error, 'attempts'=>$attempts]);
+            } else {
+                $backoff = max(1, min((int)$backoffBaseSeconds * (int)(2 ** max(0, $attempts - 1)), (int)$backoffMaxSeconds));
+                $this->jobs->requeueForRetry($job->id, $workerId, $error, $backoff);
+                $this->audit->log($job->requestedBy, 'provisioning.retrying', 'provisioning_job', (string)$job->id, 'failure', ['error'=>$error, 'attempts'=>$attempts, 'retry_in_seconds'=>$backoff]);
             }
         }
 

@@ -11,7 +11,7 @@ use App\Repositories\HostingPlanRepository;
 use App\Repositories\SubdomainRepository;
 use App\Services\AuditService;
 use App\Services\HostingService;
-use App\Services\Provisioning\LocalMockProvisioner;
+use App\Services\Providers\ProviderFactory;
 use App\Validators\HostingAccountValidator;
 
 final class HostingController
@@ -24,7 +24,7 @@ final class HostingController
             new HostingAccountRepository($db),
             new HostingPlanRepository($db),
             new SubdomainRepository($db),
-            new LocalMockProvisioner(),
+            ProviderFactory::provisioner(),
             new AuditService($db)
         );
     }

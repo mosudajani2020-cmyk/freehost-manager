@@ -10,7 +10,7 @@ use App\Repositories\ProvisioningJobRepository;
 use App\Services\AuditService;
 use App\Services\ProvisioningService;
 use App\Repositories\HostingNodeRepository;
-use App\Services\Provisioning\LocalMockProvisioner;
+use App\Services\Providers\ProviderFactory;
 
 final class AdminProvisioningController
 {
@@ -47,7 +47,7 @@ final class AdminProvisioningController
     {
         $id = (int)($params['id'] ?? 0);
         $db = Database::getInstance();
-        $service = new ProvisioningService($db, new HostingNodeRepository($db), new ProvisioningJobRepository($db), new LocalMockProvisioner(), new AuditService($db));
+        $service = new ProvisioningService($db, new HostingNodeRepository($db), new ProvisioningJobRepository($db), ProviderFactory::provisioner(), new AuditService($db));
         try {
             $job = $service->retryJob($id, (int)($_SESSION['user_id'] ?? 0));
             $_SESSION['_flash'] = ['success'=>'Job retried, status: ' . $job->status];
@@ -63,7 +63,7 @@ final class AdminProvisioningController
         $id = (int)($params['id'] ?? 0);
         $reason = trim($_POST['reason'] ?? 'Manual fail');
         $db = Database::getInstance();
-        $service = new ProvisioningService($db, new HostingNodeRepository($db), new ProvisioningJobRepository($db), new LocalMockProvisioner(), new AuditService($db));
+        $service = new ProvisioningService($db, new HostingNodeRepository($db), new ProvisioningJobRepository($db), ProviderFactory::provisioner(), new AuditService($db));
         $service->failJob($id, $reason, (int)($_SESSION['user_id'] ?? 0));
         $_SESSION['_flash'] = ['success'=>'Job marked failed'];
         header('Location: /admin/provisioning/' . $id, true, 302);
