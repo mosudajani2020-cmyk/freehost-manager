@@ -11,14 +11,10 @@
         <thead><tr><th>ID</th><th>Username</th><th>Owner</th><th>Plan</th><th>Status</th><th>Storage</th><th>Created</th><th></th></tr></thead>
         <tbody>
           <?php foreach ($accounts as $a): ?>
-            <?php
-              // Fetch owner for display — quick query (N+1 ok for Phase2 small)
-              $owner = (new App\Helpers\Database)->fetch ?? null;
-            ?>
             <tr>
               <td><?= (int) $a->id ?></td>
               <td><?= e($a->username) ?></td>
-              <td class="small"><?= e($a->userId) ?></td>
+              <td class="small"><?= e($owners[$a->id]['email'] ?? "ID {$a->userId}") ?></td>
               <td><?= e($a->plan?->name ?? '?') ?></td>
               <td><span class="badge bg-<?= $a->status==='active'?'success':($a->status==='suspended'?'warning':'secondary') ?>"><?= e($a->status) ?></span></td>
               <td><?= e($a->storageUsedMb) ?>/<?= e($a->plan?->storageLimitMb ?? '?') ?> MB</td>

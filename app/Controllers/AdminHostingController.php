@@ -41,7 +41,26 @@ final class AdminHostingController
         $total = $repo->count(null, $q);
         $pages = max(1, (int)ceil($total/$per));
 
-        View::render('admin.hosting.index', ['title'=>'All Hosting Accounts','accounts'=>$accounts,'q'=>$q,'page'=>$page,'pages'=>$pages,'total'=>$total]);
+        // Resolve owners via the existing Database helper (singleton, no direct construction)
+        $owners = [];
+        if (!empty($accounts)) {
+            $ids = array_map(fn($a) => (int) $a->userId, $accounts);
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $rows = $db->fetchAll("SELECT id, email, username FROM users WHERE id IN ($placeholders)", $ids);
+            foreach ($rows as $r) {
+                $owners[(int) $r['id']] = $r;
+            }
+        }
+
+        View::render('admin.hosting.index', [
+            'title' => 'All Hosting Accounts',
+            'accounts' => $accounts,
+            'q' => $q,
+            'page' => $page,
+            'pages' => $pages,
+            'total' => $total,
+            'owners' => $owners,
+        ]);
     }
 
     public function show(array $params = []): void
