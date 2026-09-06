@@ -22,6 +22,11 @@ use App\Controllers\UsageController;
 use App\Controllers\BackupController;
 use App\Controllers\AdminMonitoringController;
 use App\Controllers\AdminBackupController;
+use App\Controllers\AdminUserController;
+use App\Controllers\AdminAuditController;
+use App\Controllers\AdminSettingsController;
+use App\Controllers\AdminBillingController;
+use App\Controllers\BillingController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\RbacMiddleware;
@@ -34,7 +39,7 @@ $router->get('/', function() {
         header('Location: ' . $target, true, 302);
         exit;
     }
-    header('Location: /login', true, 302);
+    \App\Helpers\View::render('landing', ['title'=>'FreeHost Manager — Secure Web Hosting']);
     exit;
 });
 
@@ -103,6 +108,24 @@ $router->post('/hosting/{id}/databases/users/delete', [DatabaseController::class
 // Admin Database Hosting
 $router->get('/admin/databases', [AdminDatabaseController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
 $router->get('/admin/databases/{id}', [AdminDatabaseController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+
+// Admin Users / Audit / Settings / Billing (Phase 8+)
+$router->get('/admin/users', [AdminUserController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/users/{id}', [AdminUserController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->post('/admin/users/{id}/status', [AdminUserController::class, 'updateStatus'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/audit', [AdminAuditController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/settings', [AdminSettingsController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->post('/admin/settings', [AdminSettingsController::class, 'update'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/billing/subscriptions', [AdminBillingController::class, 'subscriptions'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->post('/admin/billing/subscriptions/{id}/status', [AdminBillingController::class, 'updateSubscription'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->get('/admin/billing/invoices', [AdminBillingController::class, 'invoices'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+$router->post('/admin/billing/invoices/{id}/status', [AdminBillingController::class, 'updateInvoice'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+
+// Customer billing
+$router->get('/billing', [BillingController::class, 'index'], [AuthMiddleware::class]);
+$router->post('/billing/subscribe', [BillingController::class, 'subscribe'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->post('/billing/cancel', [BillingController::class, 'cancel'], [CsrfMiddleware::class, AuthMiddleware::class]);
+$router->post('/billing/webhook', [BillingController::class, 'webhook'], []); // HMAC-verified webhook (no session)
 
 // Admin Nodes & Provisioning (Phase 5)
 $router->get('/admin/nodes', [AdminNodeController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);

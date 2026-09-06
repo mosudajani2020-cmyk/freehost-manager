@@ -13,6 +13,7 @@
         <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/ssl' : '/hosting' ?>"><i class="fa-solid fa-lock me-2"></i>SSL</a></li>
         <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/usage' : '/hosting' ?>"><i class="fa-solid fa-chart-area me-2"></i>Usage</a></li>
         <li class="nav-item"><a class="nav-link" href="<?= $firstHostingId ? '/hosting/' . $firstHostingId . '/backups' : '/hosting' ?>"><i class="fa-solid fa-box-archive me-2"></i>Backups</a></li>
+        <li class="nav-item"><a class="nav-link" href="/billing"><i class="fa-solid fa-credit-card me-2"></i>Billing</a></li>
       </ul>
       <hr>
       <div class="small text-muted">

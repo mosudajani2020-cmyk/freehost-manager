@@ -25,7 +25,9 @@ body { background:#f8f9fa; }
     <div class="collapse navbar-collapse" id="navMain">
       <ul class="navbar-nav ms-auto">
         <?php if (!empty($_SESSION['user_id'])): ?>
+          <?php $firstHostingId = null; ?>
           <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="fa-solid fa-gauge me-1"></i>Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="/hosting"><i class="fa-solid fa-server me-1"></i>Hosting</a></li>
           <?php if (in_array('admin', $_SESSION['user_roles'] ?? [], true)): ?>
             <li class="nav-item"><a class="nav-link" href="/admin/dashboard"><i class="fa-solid fa-shield-halved me-1"></i>Admin</a></li>
           <?php endif; ?>
