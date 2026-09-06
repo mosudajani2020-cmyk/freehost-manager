@@ -39,7 +39,7 @@ $router->get('/', function() {
         header('Location: ' . $target, true, 302);
         exit;
     }
-    \App\Helpers\View::render('landing', ['title'=>'FreeHost Manager — Secure Web Hosting']);
+    \App\Helpers\View::render('public.landing', ['title'=>'FreeHost Manager — Secure Web Hosting']);
     exit;
 });
 
