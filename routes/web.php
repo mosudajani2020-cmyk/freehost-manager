@@ -27,6 +27,7 @@ use App\Controllers\AdminAuditController;
 use App\Controllers\AdminSettingsController;
 use App\Controllers\AdminBillingController;
 use App\Controllers\BillingController;
+use App\Controllers\NodeApiController;
 use App\Middleware\AuthMiddleware;
 use App\Middleware\CsrfMiddleware;
 use App\Middleware\RbacMiddleware;
@@ -165,3 +166,13 @@ $router->get('/admin/monitoring/usage', [AdminMonitoringController::class, 'usag
 $router->get('/admin/backups', [AdminBackupController::class, 'index'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
 $router->get('/admin/backups/{id}', [AdminBackupController::class, 'show'], [AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
 $router->post('/admin/backups/expire', [AdminBackupController::class, 'expire'], [CsrfMiddleware::class, AuthMiddleware::class, new RbacMiddleware(roles: 'admin')]);
+
+// Node API (P3) — authenticated hosting node operations — separate trust boundary
+$router->get('/v1/node/health', [NodeApiController::class, 'health'], []);
+$router->post('/v1/node/hosting/create-identity', [NodeApiController::class, 'createIdentity'], []);
+$router->post('/v1/node/hosting/create-filesystem', [NodeApiController::class, 'createFilesystem'], []);
+$router->post('/v1/node/hosting/configure-php-fpm', [NodeApiController::class, 'configurePhpFpm'], []);
+$router->post('/v1/node/hosting/apply-resource-policy', [NodeApiController::class, 'applyResourcePolicy'], []);
+$router->post('/v1/node/hosting/suspend', [NodeApiController::class, 'suspend'], []);
+$router->post('/v1/node/hosting/unsuspend', [NodeApiController::class, 'unsuspend'], []);
+$router->post('/v1/node/hosting/terminate', [NodeApiController::class, 'terminate'], []);

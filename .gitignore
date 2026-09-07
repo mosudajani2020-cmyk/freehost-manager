@@ -3,6 +3,7 @@
 .env.*
 !.env.example
 !.env.worker.example
+!.env.node.example
 
 # Logs
 *.log
